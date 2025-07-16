@@ -1,1 +1,1 @@
-# LearnIQ
+# Federated Learning
