@@ -7,6 +7,10 @@ from flwr.clientapp import ClientApp
 from fl.task import Net, load_data
 from fl.task import test as test_fn
 from fl.task import train as train_fn
+from fl.config import load_run_config, merge_with_context_defaults, set_global_seeds
+from fl.storage import get_client_store
+from fl.secure import mask_state_dict
+from fl.tracking import start_run, log_params, log_metrics
 
 # Flower ClientApp
 app = ClientApp()
@@ -15,6 +19,12 @@ app = ClientApp()
 @app.train()
 def train(msg: Message, context: Context):
     """Train the model on local data."""
+
+    # Load config and set seeds for reproducibility
+    file_cfg = load_run_config()
+    if "seed" in file_cfg:
+        set_global_seeds(int(file_cfg["seed"]))
+    run_cfg = merge_with_context_defaults(context.run_config, file_cfg.get("train", {}))
 
     # Load the model and initialize it with the received weights
     model = Net()
@@ -25,19 +35,35 @@ def train(msg: Message, context: Context):
     # Load the data
     partition_id = context.node_config["partition-id"]
     num_partitions = context.node_config["num-partitions"]
+    store = get_client_store(partition_id, file_cfg)
     trainloader, _ = load_data(partition_id, num_partitions)
 
     # Call the training function
-    train_loss = train_fn(
+    with start_run(experiment="fl", run_name=f"client-{partition_id}"):
+        log_params({
+            "partition_id": partition_id,
+            "num_partitions": num_partitions,
+            "local_epochs": int(run_cfg["local-epochs"]),
+            "lr": msg.content["config"]["lr"],
+        })
+        train_loss = train_fn(
         model,
         trainloader,
-        context.run_config["local-epochs"],
+        int(run_cfg["local-epochs"]),
         msg.content["config"]["lr"],
         device,
-    )
+        global_state_dict=msg.content["arrays"].to_torch_state_dict(),
+        )
+        round_idx = int(context.run_config.get("round", 0))
+        log_metrics({"train_loss": train_loss}, step=round_idx)
+        # Save checkpoint
+        ckpt_path = store.checkpoint_path(round_idx)
+        torch.save(model.state_dict(), ckpt_path)
 
     # Construct and return reply Message
-    model_record = ArrayRecord(model.state_dict())
+    secure_enabled = bool(file_cfg.get("security", {}).get("secure_agg", False))
+    masked_sd = mask_state_dict(model.state_dict(), enabled=secure_enabled)
+    model_record = ArrayRecord(masked_sd)
     metrics = {
         "train_loss": train_loss,
         "num-examples": len(trainloader.dataset),
@@ -51,6 +77,11 @@ def train(msg: Message, context: Context):
 def evaluate(msg: Message, context: Context):
     """Evaluate the model on local data."""
 
+    # Load config and set seeds
+    file_cfg = load_run_config()
+    if "seed" in file_cfg:
+        set_global_seeds(int(file_cfg["seed"]))
+
     # Load the model and initialize it with the received weights
     model = Net()
     model.load_state_dict(msg.content["arrays"].to_torch_state_dict())
@@ -60,6 +91,7 @@ def evaluate(msg: Message, context: Context):
     # Load the data
     partition_id = context.node_config["partition-id"]
     num_partitions = context.node_config["num-partitions"]
+    store = get_client_store(partition_id, file_cfg)
     _, valloader = load_data(partition_id, num_partitions)
 
     # Call the evaluation function

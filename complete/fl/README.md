@@ -1,37 +1,56 @@
-# fl: A Flower / PyTorch app
+# fl: A Federated Learning Flower App
 
-## Install dependencies and project
+## Summary
+A federated learning project using Flower with PyTorch, featuring configurable experiments (YAML/JSON), non-IID client partitions, personalization (FedProx), DP-SGD (Opacus), per-client storage simulation (folder/SQLite), tracking (MLflow), checkpoints, tests, CI, and Docker Compose for deployment.
 
-The dependencies are listed in the `pyproject.toml` and you can install them as follows:
+## Architecture
+- `fl/server_app.py`: Server with FedAvg strategy
+- `fl/client_app.py`: Client training/eval; config-driven preprocessing, personalization, DP-SGD, tracking, checkpointing
+- `fl/task.py`: Model, transforms, loaders, train/eval
+- `fl/partitioning.py`: IID and non-IID partitioners
+- `fl/personalization.py`: FedProx loss
+- `fl/dp.py`: DP-SGD via Opacus
+- `fl/storage.py`: Per-client folder/SQLite store
+- `fl/tracking.py`: MLflow utilities
+- `config/default.yaml`: Config
 
+## Quickstart
 ```bash
-pip install -e .
-```
+# Install
+pip install -e complete/fl
 
-> **Tip:** Your `pyproject.toml` file can define more than just the dependencies of your Flower app. You can also use it to specify hyperparameters for your runs and control which Flower Runtime is used. By default, it uses the Simulation Runtime, but you can switch to the Deployment Runtime when needed.
-> Learn more in the [TOML configuration guide](https://flower.ai/docs/framework/how-to-configure-pyproject-toml.html).
-
-## Run with the Simulation Engine
-
-In the `fl` directory, use `flwr run` to run a local simulation:
-
-```bash
+# Run local simulation
+cd complete/fl
 flwr run .
+
+# Tests
+cd complete/fl
+pytest -q
+
+# Optional: MLflow UI
+mlflow ui --backend-store-uri file:./mlruns
 ```
 
-Refer to the [How to Run Simulations](https://flower.ai/docs/framework/how-to-run-simulations.html) guide in the documentation for advice on how to optimize your simulations.
+## Non-IID Experiments
+Configure `data.non_iid`.
+- Label skew: `{type: label_skew, params: {alpha: 0.3}}`
+- Quantity skew: `{type: quantity_skew, params: {min_size: 100}}`
 
-## Run with the Deployment Engine
+## Personalization
+Set `personalization.method: fedprox` and `personalization.fedprox_mu`.
 
-Follow this [how-to guide](https://flower.ai/docs/framework/how-to-run-flower-with-deployment-engine.html) to run the same app in this example but with Flower's Deployment Engine. After that, you might be interested in setting up [secure TLS-enabled communications](https://flower.ai/docs/framework/how-to-enable-tls-connections.html) and [SuperNode authentication](https://flower.ai/docs/framework/how-to-authenticate-supernodes.html) in your federation.
+## Differential Privacy
+Set `privacy.dp_sgd.enabled: true`, configure `noise_multiplier`, `max_grad_norm`. Document epsilon/utility tradeoffs.
 
-You can run Flower on Docker too! Check out the [Flower with Docker](https://flower.ai/docs/framework/docker/index.html) documentation.
+## Ethical Note
+Use only public datasets (e.g., MedMNIST). No real patient data.
 
-## Resources
+## Reproduce from Checkpoint
+```bash
+python -m fl.scripts.resume_from_ckpt --ckpt path/to/round_X.pt
+```
 
-- Flower website: [flower.ai](https://flower.ai/)
-- Check the documentation: [flower.ai/docs](https://flower.ai/docs/)
-- Give Flower a ⭐️ on GitHub: [GitHub](https://github.com/adap/flower)
-- Join the Flower community!
-  - [Flower Slack](https://flower.ai/join-slack/)
-  - [Flower Discuss](https://discuss.flower.ai/)
+## Design notes & limitations
+- Simulated hospitals with local stores
+- Secure aggregation stub provided
+- Flower deployment via Docker Compose included

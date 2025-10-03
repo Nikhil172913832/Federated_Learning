@@ -1,0 +1,44 @@
+seed: 42
+
+topology:
+  num_clients: 10
+  fraction: 0.5
+
+train:
+  lr: 0.01
+  local_epochs: 1
+  num_server_rounds: 3
+
+data:
+  dataset: albertvillanova/medmnist-v2
+  subset: pneumoniamnist
+  iid: true
+  non_iid: null  # options: {type: label_skew|quantity_skew|covariate_shift, params: {...}}
+  batch_size: 32
+
+preprocess:
+  resize: null    # e.g., [28, 28]
+  normalize_mean: [0.5]
+  normalize_std: [0.5]
+  augmentation:
+    enabled: false
+    params: {}
+
+privacy:
+  dp_sgd:
+    enabled: false
+    noise_multiplier: 0.8
+    max_grad_norm: 1.0
+    target_epsilon: null
+    target_delta: 1e-5
+
+personalization:
+  method: none  # options: none|fedprox|fedbn|fedper|finetune
+  fedprox_mu: 0.0
+
+storage:
+  backend: folder   # options: folder|sqlite
+  root_dir: ./client_stores
+  sqlite_dir: ./client_sqlite
+
+

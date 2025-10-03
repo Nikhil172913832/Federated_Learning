@@ -8,6 +8,8 @@ services:
       - process
     ports:
       - 9093:9093
+    volumes:
+      - superlink-state:/app/state
 
   # create a SuperExec service for SuperLink to execute ServerApps
   superexec-serverapp:
@@ -25,9 +27,9 @@ services:
         USER app
 
         WORKDIR /app
-        COPY --chown=app:app pyproject.toml .
+        COPY --chown=app:app complete/fl/ /app/
         RUN sed -i 's/.*flwr\[simulation\].*//' pyproject.toml \
-          && python -m pip install -U --no-cache-dir .
+          && python -m pip install -e . --no-cache-dir
 
         ENTRYPOINT ["flower-superexec"]
     command:
@@ -39,6 +41,10 @@ services:
     restart: on-failure:3
     depends_on:
       - superlink
+    environment:
+      - FL_CONFIG_PATH=/app/config/default.yaml
+    volumes:
+      - ./fl/config/default.yaml:/app/config/default.yaml:ro
 
   # create two SuperNode services with different node configs
   supernode-1:
@@ -104,9 +110,9 @@ services:
         USER app
 
         WORKDIR /app
-        COPY --chown=app:app pyproject.toml .
+        COPY --chown=app:app complete/fl/ /app/
         RUN sed -i 's/.*flwr\[simulation\].*//' pyproject.toml \
-          && python -m pip install -U --no-cache-dir .
+          && python -m pip install -e . --no-cache-dir
 
         ENTRYPOINT ["flower-superexec"]
     command:
@@ -122,6 +128,10 @@ services:
     stop_signal: SIGINT
     depends_on:
       - supernode-1
+    environment:
+      - FL_CONFIG_PATH=/app/config/default.yaml
+    volumes:
+      - ./fl/config/default.yaml:/app/config/default.yaml:ro
 
   superexec-clientapp-2:
     build:
@@ -138,9 +148,9 @@ services:
         USER app
 
         WORKDIR /app
-        COPY --chown=app:app pyproject.toml .
+        COPY --chown=app:app complete/fl/ /app/
         RUN sed -i 's/.*flwr\[simulation\].*//' pyproject.toml \
-          && python -m pip install -U --no-cache-dir .
+          && python -m pip install -e . --no-cache-dir
 
         ENTRYPOINT ["flower-superexec"]
 
@@ -157,6 +167,13 @@ services:
     stop_signal: SIGINT
     depends_on:
       - supernode-2
+    environment:
+      - FL_CONFIG_PATH=/app/config/default.yaml
+    volumes:
+      - ./fl/config/default.yaml:/app/config/default.yaml:ro
+
+volumes:
+  superlink-state:
   # uncomment to add another ClientApp
   #
   # superexec-clientapp-3:
