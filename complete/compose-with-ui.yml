@@ -43,10 +43,11 @@ services:
       - superlink
     environment:
       - FL_CONFIG_PATH=/app/config/default.yaml
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
     volumes:
       - ./fl/config/default.yaml:/app/config/default.yaml:ro
 
-  # create two SuperNode services with different node configs
+  # create multiple SuperNode services with different node configs
   supernode-1:
     image: flwr/supernode:${FLWR_VERSION:-1.22.0}
     command:
@@ -58,7 +59,7 @@ services:
       - --isolation
       - process
       - --node-config
-      - "partition-id=0 num-partitions=2"
+      - "partition-id=0 num-partitions=3"
     depends_on:
       - superlink
 
@@ -73,35 +74,32 @@ services:
       - --isolation
       - process
       - --node-config
-      - "partition-id=1 num-partitions=2"
+      - "partition-id=1 num-partitions=3"
     depends_on:
       - superlink
 
-  # uncomment to add another SuperNode
-  #
-  # supernode-3:
-  #   image: flwr/supernode:${FLWR_VERSION:-1.22.0}
-  #   command:
-  #     - --insecure
-  #     - --superlink
-  #     - superlink:9092
-  #     - --clientappio-api-address
-  #     - 0.0.0.0:9096
-  #     - --isolation
-  #     - process
-  #     - --node-config
-  #     - "partition-id=1 num-partitions=2"
-  #   depends_on:
-  #     - superlink
+  supernode-3:
+    image: flwr/supernode:${FLWR_VERSION:-1.22.0}
+    command:
+      - --insecure
+      - --superlink
+      - superlink:9092
+      - --clientappio-api-address
+      - 0.0.0.0:9096
+      - --isolation
+      - process
+      - --node-config
+      - "partition-id=2 num-partitions=3"
+    depends_on:
+      - superlink
 
-  # create one SuperExec service for each SuperNode to execute ClientApps
+  # create SuperExec services for each SuperNode to execute ClientApps
   superexec-clientapp-1:
     build:
       context: ..
       dockerfile_inline: |
         FROM flwr/superexec:${FLWR_VERSION:-1.22.0}
 
-        # gcc is required for the fastai quickstart example
         USER root
         RUN apt-get update \
             && apt-get -y --no-install-recommends install \
@@ -124,12 +122,13 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "2"
+          cpus: "1"
     stop_signal: SIGINT
     depends_on:
       - supernode-1
     environment:
       - FL_CONFIG_PATH=/app/config/default.yaml
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
     volumes:
       - ./fl/config/default.yaml:/app/config/default.yaml:ro
 
@@ -139,7 +138,6 @@ services:
       dockerfile_inline: |
         FROM flwr/superexec:${FLWR_VERSION:-1.22.0}
 
-        # gcc is required for the fastai quickstart example
         USER root
         RUN apt-get update \
             && apt-get -y --no-install-recommends install \
@@ -153,7 +151,6 @@ services:
           && python -m pip install -e . --no-cache-dir
 
         ENTRYPOINT ["flower-superexec"]
-
     command:
       - --insecure
       - --plugin-type
@@ -163,49 +160,113 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "2"
+          cpus: "1"
     stop_signal: SIGINT
     depends_on:
       - supernode-2
     environment:
       - FL_CONFIG_PATH=/app/config/default.yaml
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
     volumes:
       - ./fl/config/default.yaml:/app/config/default.yaml:ro
 
+  superexec-clientapp-3:
+    build:
+      context: ..
+      dockerfile_inline: |
+        FROM flwr/superexec:${FLWR_VERSION:-1.22.0}
+
+        USER root
+        RUN apt-get update \
+            && apt-get -y --no-install-recommends install \
+            build-essential \
+            && rm -rf /var/lib/apt/lists/*
+        USER app
+
+        WORKDIR /app
+        COPY --chown=app:app complete/fl/ /app/
+        RUN sed -i 's/.*flwr\[simulation\].*//' pyproject.toml \
+          && python -m pip install -e . --no-cache-dir
+
+        ENTRYPOINT ["flower-superexec"]
+    command:
+      - --insecure
+      - --plugin-type
+      - clientapp
+      - --appio-api-address
+      - supernode-3:9096
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+    stop_signal: SIGINT
+    depends_on:
+      - supernode-3
+    environment:
+      - FL_CONFIG_PATH=/app/config/default.yaml
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+    volumes:
+      - ./fl/config/default.yaml:/app/config/default.yaml:ro
+
+  # Federated Learning Platform UI
+  fl-platform-ui:
+    build:
+      context: ..
+      dockerfile_inline: |
+        FROM python:3.10-slim
+
+        WORKDIR /app
+
+        # Install system dependencies
+        RUN apt-get update && apt-get install -y \
+            curl \
+            && rm -rf /var/lib/apt/lists/*
+
+        # Install Python dependencies
+        RUN pip install --no-cache-dir \
+            flask \
+            requests \
+            docker \
+            psutil \
+            matplotlib \
+            plotly \
+            dash \
+            dash-bootstrap-components
+
+        # Copy UI files
+        COPY --chown=root:root platform-ui/ /app/
+
+        EXPOSE 8050
+
+        CMD ["python", "app.py"]
+    ports:
+      - "8050:8050"
+    environment:
+      - FLOWER_SUPERLINK_URL=http://superlink:9093
+    depends_on:
+      - superlink
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+  # MLflow tracking server
+  mlflow:
+    build:
+      context: ..
+      dockerfile_inline: |
+        FROM python:3.10-slim
+
+        WORKDIR /app
+
+        RUN pip install --no-cache-dir mlflow
+
+        EXPOSE 5000
+
+        CMD ["mlflow", "server", "--host", "0.0.0.0", "--backend-store-uri", "sqlite:///mlflow.db"]
+    ports:
+      - "5000:5000"
+    volumes:
+      - mlflow-data:/app
+
 volumes:
   superlink-state:
-  # uncomment to add another ClientApp
-  #
-  # superexec-clientapp-3:
-  #   build:
-  #     context: ..
-  #     dockerfile_inline: |
-  #       FROM flwr/superexec:${FLWR_VERSION:-1.22.0}
-
-  #       # gcc is required for the fastai quickstart example
-  #       USER root
-  #       RUN apt-get update \
-  #           && apt-get -y --no-install-recommends install \
-  #           build-essential \
-  #           && rm -rf /var/lib/apt/lists/*
-  #       USER app
-
-  #       WORKDIR /app
-  #       COPY --chown=app:app pyproject.toml .
-  #       RUN sed -i 's/.*flwr\[simulation\].*//' pyproject.toml \
-  #         && python -m pip install -U --no-cache-dir .
-
-  #       ENTRYPOINT ["flwr-superexec"]
-  #   command:
-  #     - --insecure
-  #     - --plugin-type
-  #     - clientapp
-  #     - --appio-api-address
-  #     - supernode-3:9096
-  #   deploy:
-  #     resources:
-  #       limits:
-  #         cpus: "2"
-  #   stop_signal: SIGINT
-  #   depends_on:
-  #     - supernode-3
+  mlflow-data:

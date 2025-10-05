@@ -15,6 +15,34 @@ A federated learning project using Flower with PyTorch, featuring configurable e
 - `config/default.yaml`: Config
 
 ## Quickstart
+
+### Option 1: Docker Compose (Recommended)
+```bash
+# Prerequisites: Install flwr CLI and ensure Docker is running
+pip install flwr
+
+# Setup Docker Compose environment
+git clone --depth=1 --branch v1.22.0 https://github.com/adap/flower.git _tmp \
+  && mv _tmp/framework/docker/complete . \
+  && rm -rf _tmp
+
+# Create Flower project
+flwr new quickstart-compose --framework PyTorch --username flower
+
+# Set environment variable
+export PROJECT_DIR=quickstart-compose
+
+# Start services
+docker compose up --build -d
+
+# Run the project
+flwr run quickstart-compose local-deployment --stream
+
+# Stop services when done
+docker compose down
+```
+
+### Option 2: Local Simulation
 ```bash
 # Install
 pip install -e complete/fl

@@ -3,7 +3,7 @@
 Supports:
 - IID
 - Label skew via Dirichlet distribution
-- Quantity skew via random client data quotas
+- Quantity skew via shard-based partitioning
 - Covariate shift via per-client transform variants (handled in task.py)
 """
 
@@ -13,7 +13,7 @@ from typing import Any, Dict, Optional
 from flwr_datasets.partitioner import (
     IidPartitioner,
     DirichletPartitioner,
-    RandomFixedSizePartitioner,
+    ShardPartitioner,
 )
 
 
@@ -43,10 +43,14 @@ def build_partitioner(num_partitions: int, cfg: Optional[Dict[str, Any]]) -> Any
         return DirichletPartitioner(num_partitions=num_partitions, alpha=alpha)
 
     if ptype == "quantity_skew":
-        min_size = int(params.get("min_size", 50))
-        return RandomFixedSizePartitioner(
+        # Use shard-based partitioning for quantity skew
+        # Each client gets a different number of shards, creating heterogeneity
+        shard_size = int(params.get("shard_size", 100))
+        return ShardPartitioner(
             num_partitions=num_partitions,
-            min_partition_size=min_size,
+            partition_by="train",
+            shard_size=shard_size,
+            shuffle=True,
         )
 
     # Fallback to IID if unknown type
