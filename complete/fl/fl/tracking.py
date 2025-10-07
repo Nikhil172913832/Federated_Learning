@@ -2,6 +2,7 @@
 
 import os
 from contextlib import contextmanager
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, Iterator, Optional
 
@@ -18,7 +19,12 @@ def start_run(experiment: str, run_name: Optional[str] = None) -> Iterator[None]
         yield
         return
     mlflow.set_tracking_uri(os.environ.get("MLFLOW_TRACKING_URI", "file:./mlruns"))
-    mlflow.set_experiment(experiment)
+    
+    # Add timestamp to experiment name for fresh logs each run
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    experiment_with_timestamp = f"{experiment}_{timestamp}"
+    
+    mlflow.set_experiment(experiment_with_timestamp)
     with mlflow.start_run(run_name=run_name):
         yield
 

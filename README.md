@@ -169,20 +169,42 @@ See `complete/fl/README.md` for detailed instructions and advanced configuration
 
 ## 📚 Documentation
 
-### 🎯 Getting Started Guides
+### Main Documentation
+- **[README.md](README.md)** - This file - Complete platform overview and quick start
+- **[complete/fl/README.md](complete/fl/README.md)** - Flower application details and advanced configuration
+- **[complete/MLFLOW_FRESH_LOGS.md](complete/MLFLOW_FRESH_LOGS.md)** - Guide for fresh MLflow logs per training run
 
-- **[SUMMARY.md](SUMMARY.md)** - 📋 **START HERE** - Quick overview and verification checklist
-- **[RUNNING_GUIDE.md](RUNNING_GUIDE.md)** - 📖 Complete step-by-step instructions
-- **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** - ⚡ Quick command reference
-- **[MLFLOW_GUIDE.md](MLFLOW_GUIDE.md)** - 📊 How to use MLflow for experiment tracking
+### Official Resources
+- **[Flower Documentation](https://flower.ai/docs/)** - Official Flower framework documentation
+- **[Docker Compose Tutorial](https://flower.ai/docs/framework/docker/tutorial-quickstart-docker-compose.html)** - Official Docker Compose tutorial
 
-### 📘 Advanced Guides
+## 🛠️ Useful Scripts
 
-- **[Platform Showcase Guide](PLATFORM_SHOWCASE.md)** - Complete platform demonstration
-- **[Docker Container Clients Guide](DOCKER_CLIENTS_GUIDE.md)** - Docker container clients setup
-- **[Docker Compose Setup](DOCKER_COMPOSE.md)** - Detailed Docker Compose configuration
-- **[Flower App Documentation](complete/fl/README.md)** - Application-specific documentation
-- **[Official Flower Tutorial](https://flower.ai/docs/framework/docker/tutorial-quickstart-docker-compose.html)** - Authoritative reference
+### Root Directory Scripts
+- **`launch-platform.sh`** - Automated platform launcher with checks and setup
+- **`Makefile`** - Convenient make commands for common operations
+
+### Complete Directory Scripts  
+- **`fresh-training.sh`** - Start fresh training with clean MLflow logs
+- **`clean-mlflow.sh`** - Clean only MLflow data without restarting other containers
+
+## 📊 MLflow Tips
+
+### Fresh Logs Per Training Run
+The platform automatically creates timestamped experiments (e.g., `fl_20251006_143025`) for each training run.
+
+**Quick commands:**
+```bash
+# Clean MLflow and restart
+cd complete
+./clean-mlflow.sh
+
+# Complete fresh start with training
+cd complete
+./fresh-training.sh
+```
+
+See `complete/MLFLOW_FRESH_LOGS.md` for detailed options.
 
 ## 🎯 Platform Showcase
 
@@ -195,11 +217,54 @@ This platform demonstrates:
 5. **Complete Stack**: From data loading to model training to experiment tracking
 6. **Security Features**: TLS encryption and state persistence options
 
+## ⚡ Quick Reference
+
+### Common Commands
+```bash
+# Start platform
+cd complete && docker compose -f compose-with-ui.yml up -d
+
+# Run training
+cd complete && flwr run fl local-deployment --stream
+
+# View logs
+docker compose -f compose-with-ui.yml logs -f
+
+# Stop platform
+docker compose -f compose-with-ui.yml down
+
+# Fresh start (clean MLflow)
+cd complete && ./fresh-training.sh
+
+# Clean only MLflow
+cd complete && ./clean-mlflow.sh
+```
+
+### Platform URLs
+- **Platform UI**: http://localhost:8050
+- **MLflow**: http://localhost:5000
+- **SuperLink**: http://localhost:9093
+
+### Troubleshooting
+```bash
+# Network error? Clean and restart
+docker compose -f compose-with-ui.yml down
+docker volume rm complete_mlflow-data  # Optional: clear MLflow
+docker compose -f compose-with-ui.yml up -d
+
+# Check container status
+docker compose -f compose-with-ui.yml ps
+
+# View specific container logs
+docker logs complete-superlink-1
+docker logs complete-mlflow-1
+```
+
 ## 🚀 Getting Started
 
-1. **Launch the platform**: `./launch-platform.sh`
+1. **Launch the platform**: `cd complete && docker compose -f compose-with-ui.yml up -d`
 2. **Open the dashboard**: http://localhost:8050
-3. **Start federated learning**: `flwr run quickstart-compose local-deployment --stream`
-4. **Monitor progress**: Watch real-time updates in the web UI
+3. **Start federated learning**: `cd complete && flwr run fl local-deployment --stream`
+4. **Monitor progress**: Watch real-time updates in the web UI and MLflow
 
 Perfect for showcasing federated learning with Docker container clients! 🎉
