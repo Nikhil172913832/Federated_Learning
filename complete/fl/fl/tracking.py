@@ -20,11 +20,8 @@ def start_run(experiment: str, run_name: Optional[str] = None) -> Iterator[None]
         return
     mlflow.set_tracking_uri(os.environ.get("MLFLOW_TRACKING_URI", "file:./mlruns"))
     
-    # Add timestamp to experiment name for fresh logs each run
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    experiment_with_timestamp = f"{experiment}_{timestamp}"
-    
-    mlflow.set_experiment(experiment_with_timestamp)
+    # Use consistent experiment name for grouping
+    mlflow.set_experiment(experiment)
     with mlflow.start_run(run_name=run_name):
         yield
 

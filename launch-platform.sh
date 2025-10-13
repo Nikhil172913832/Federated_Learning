@@ -33,6 +33,16 @@ if ! command -v docker compose > /dev/null 2>&1; then
 fi
 echo "✅ Docker Compose V2 is available"
 
+# Quick network check
+echo ""
+echo "🌐 Checking network connectivity..."
+if curl -s --connect-timeout 3 https://pypi.org > /dev/null 2>&1; then
+    echo "✅ Network connection is good"
+else
+    echo "⚠️  Warning: Network may be slow. Run ./check-network.sh for details"
+    echo "   Docker builds may timeout. Consider retrying later."
+fi
+
 # Check if complete directory exists
 if [ ! -d "complete" ]; then
     echo "❌ Error: complete directory not found. Run setup-docker-compose.sh first"
@@ -78,7 +88,8 @@ docker compose -f compose-with-ui.yml up --build -d
 
 echo ""
 echo "⏳ Step 2: Waiting for services to be ready..."
-sleep 45
+echo "This may take up to 60 seconds for all services to initialize..."
+sleep 60
 
 echo ""
 echo "📊 Step 3: Checking platform status..."
@@ -130,8 +141,15 @@ echo "🎮 Next Steps:"
 echo "  1. Open http://localhost:8050 in your browser to see the platform dashboard"
 echo "  2. Monitor real-time container status and system resources"
 echo "  3. Start federated learning by running:"
-echo "     cd .."
-echo "     flwr run $PROJECT_DIR local-deployment --stream"
+echo "     cd complete"
+echo "     flwr run fl local-deployment --stream"
+echo "  4. View MLflow metrics at http://localhost:5000"
+echo ""
+echo "⚠️  Important Notes:"
+echo "  • Wait for all containers to be 'healthy' before starting training"
+echo "  • MLflow logs will appear after the first training round completes"
+echo "  • Dashboard updates every 5 seconds automatically"
+echo "  • Container logs are accessible from the dashboard 'View Logs' button"
 echo ""
 echo "📋 Useful Commands:"
 echo "  View logs:           docker compose -f compose-with-ui.yml logs -f"

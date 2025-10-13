@@ -1,84 +1,77 @@
-# fl: A Federated Learning Flower App
+# Federated Learning Application
 
-## Summary
-A federated learning project using Flower with PyTorch, featuring configurable experiments (YAML/JSON), non-IID client partitions, personalization (FedProx), DP-SGD (Opacus), per-client storage simulation (folder/SQLite), tracking (MLflow), checkpoints, tests, CI, and Docker Compose for deployment.
+Flower-based federated learning application with PyTorch, featuring configurable experiments, non-IID data partitioning, personalization algorithms, differential privacy, and MLflow tracking.
 
-## Architecture
-- `fl/server_app.py`: Server with FedAvg strategy
-- `fl/client_app.py`: Client training/eval; config-driven preprocessing, personalization, DP-SGD, tracking, checkpointing
-- `fl/task.py`: Model, transforms, loaders, train/eval
-- `fl/partitioning.py`: IID and non-IID partitioners
-- `fl/personalization.py`: FedProx loss
-- `fl/dp.py`: DP-SGD via Opacus
-- `fl/storage.py`: Per-client folder/SQLite store
-- `fl/tracking.py`: MLflow utilities
-- `config/default.yaml`: Config
+## Features
 
-## Quickstart
+- Configurable via YAML
+- Non-IID data partitioning (label skew, quantity skew)
+- Personalization (FedProx)
+- Differential privacy (DP-SGD via Opacus)
+- Per-client storage simulation
+- MLflow experiment tracking
+- Checkpoint support
 
-### Option 1: Docker Compose (Recommended)
-```bash
-# Prerequisites: Install flwr CLI and ensure Docker is running
-pip install flwr
+## Project Structure
 
-# Setup Docker Compose environment
-git clone --depth=1 --branch v1.22.0 https://github.com/adap/flower.git _tmp \
-  && mv _tmp/framework/docker/complete . \
-  && rm -rf _tmp
+```
+fl/
+├── client_app.py      # Client training logic
+├── server_app.py      # Server aggregation
+├── task.py           # Model and data loading
+├── partitioning.py   # Data distribution
+├── personalization.py # FedProx implementation
+├── dp.py             # Differential privacy
+├── storage.py        # Client state persistence
+└── tracking.py       # MLflow integration
 
-# Create Flower project
-flwr new quickstart-compose --framework PyTorch --username flower
-
-# Set environment variable
-export PROJECT_DIR=quickstart-compose
-
-# Start services
-docker compose up --build -d
-
-# Run the project
-flwr run quickstart-compose local-deployment --stream
-
-# Stop services when done
-docker compose down
+config/
+└── default.yaml      # Training configuration
 ```
 
-### Option 2: Local Simulation
+## Local Development
+
 ```bash
 # Install
-pip install -e complete/fl
+pip install -e .
 
-# Run local simulation
-cd complete/fl
+# Run simulation
 flwr run .
 
-# Tests
-cd complete/fl
+# Run tests
 pytest -q
-
-# Optional: MLflow UI
-mlflow ui --backend-store-uri file:./mlruns
 ```
 
-## Non-IID Experiments
-Configure `data.non_iid`.
-- Label skew: `{type: label_skew, params: {alpha: 0.3}}`
-- Quantity skew: `{type: quantity_skew, params: {min_size: 100}}`
+## Configuration Examples
 
-## Personalization
-Set `personalization.method: fedprox` and `personalization.fedprox_mu`.
+### Non-IID Data
+```yaml
+data:
+  iid: false
+  non_iid:
+    type: label_skew
+    params:
+      alpha: 0.3
+```
 
-## Differential Privacy
-Set `privacy.dp_sgd.enabled: true`, configure `noise_multiplier`, `max_grad_norm`. Document epsilon/utility tradeoffs.
+### Differential Privacy
+```yaml
+privacy:
+  dp_sgd:
+    enabled: true
+    noise_multiplier: 0.8
+    max_grad_norm: 1.0
+```
 
-## Ethical Note
-Use only public datasets (e.g., MedMNIST). No real patient data.
+### Personalization
+```yaml
+personalization:
+  method: fedprox
+  fedprox_mu: 0.01
+```
 
-## Reproduce from Checkpoint
+## Checkpoint Resume
+
 ```bash
 python -m fl.scripts.resume_from_ckpt --ckpt path/to/round_X.pt
 ```
-
-## Design notes & limitations
-- Simulated hospitals with local stores
-- Secure aggregation stub provided
-- Flower deployment via Docker Compose included

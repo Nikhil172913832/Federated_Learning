@@ -94,35 +94,97 @@ def get_flower_metrics():
 def get_mlflow_metrics():
     """Get latest metrics from MLflow"""
     try:
-        response = requests.get('http://mlflow:5000/api/2.0/mlflow/experiments/list', timeout=2)
+        mlflow_uri = os.environ.get('MLFLOW_TRACKING_URI', 'http://mlflow:5000')
+        response = requests.get(f'{mlflow_uri}/api/2.0/mlflow/experiments/search', timeout=5)
         if response.status_code == 200:
             experiments = response.json().get('experiments', [])
             if experiments:
-                return {'available': True, 'count': len(experiments)}
+                # Get runs from the most recent experiment
+                exp_id = experiments[0]['experiment_id']
+                runs_response = requests.get(
+                    f'{mlflow_uri}/api/2.0/mlflow/runs/search',
+                    json={'experiment_ids': [exp_id]},
+                    timeout=5
+                )
+                if runs_response.status_code == 200:
+                    runs = runs_response.json().get('runs', [])
+                    return {
+                        'available': True, 
+                        'count': len(experiments),
+                        'runs': len(runs),
+                        'latest_metrics': runs[0].get('data', {}).get('metrics', []) if runs else []
+                    }
+                return {'available': True, 'count': len(experiments), 'runs': 0, 'latest_metrics': []}
     except Exception as e:
-        pass
-    return {'available': False, 'count': 0}
+        print(f"Error getting MLflow metrics: {e}")
+    return {'available': False, 'count': 0, 'runs': 0, 'latest_metrics': []}
+
+def get_container_logs():
+    """Get recent logs from FL containers"""
+    if not docker_client:
+        return []
+    
+    logs = []
+    try:
+        for container in docker_client.containers.list():
+            if any(name in container.name for name in ['superexec-clientapp', 'superexec-serverapp']):
+                try:
+                    # Get last 50 lines of logs
+                    container_logs = container.logs(tail=50, timestamps=True).decode('utf-8', errors='ignore')
+                    for line in container_logs.split('\n'):
+                        if line.strip():
+                            logs.append(f"[{container.name}] {line}")
+                except Exception as e:
+                    print(f"Error getting logs from {container.name}: {e}")
+    except Exception as e:
+        print(f"Error getting container logs: {e}")
+    
+    return logs[-100:]  # Return last 100 log lines
 
 def load_config():
     """Load FL configuration from YAML"""
-    config_path = os.path.join(os.path.dirname(__file__), '../complete/fl/config/default.yaml')
-    try:
-        with open(config_path, 'r') as f:
-            return yaml.safe_load(f)
-    except Exception as e:
-        print(f"Error loading config: {e}")
-        return {}
+    # Try mounted config path first (in Docker), then local path
+    config_paths = [
+        '/config/default.yaml',  # Docker mounted volume
+        os.path.join(os.path.dirname(__file__), '../complete/fl/config/default.yaml')  # Local development
+    ]
+    
+    for config_path in config_paths:
+        if os.path.exists(config_path):
+            try:
+                with open(config_path, 'r') as f:
+                    config = yaml.safe_load(f)
+                    if config:  # Make sure we got valid YAML
+                        return config
+            except Exception as e:
+                print(f"Error loading config from {config_path}: {e}")
+                continue
+    
+    print("Error: Could not load config from any path")
+    return {}
 
 def save_config(config):
     """Save FL configuration to YAML"""
-    config_path = os.path.join(os.path.dirname(__file__), '../complete/fl/config/default.yaml')
-    try:
-        with open(config_path, 'w') as f:
-            yaml.dump(config, f, default_flow_style=False)
-        return True
-    except Exception as e:
-        print(f"Error saving config: {e}")
-        return False
+    # Try mounted config path first (in Docker), then local path
+    config_paths = [
+        '/config/default.yaml',  # Docker mounted volume
+        os.path.join(os.path.dirname(__file__), '../complete/fl/config/default.yaml')  # Local development
+    ]
+    
+    for config_path in config_paths:
+        # Try to save to the first path that exists or can be created
+        try:
+            os.makedirs(os.path.dirname(config_path), exist_ok=True)
+            with open(config_path, 'w') as f:
+                yaml.dump(config, f, default_flow_style=False)
+            print(f"Config saved to: {config_path}")
+            return True
+        except Exception as e:
+            print(f"Error saving config to {config_path}: {e}")
+            continue
+    
+    print("Error: Could not save config to any path")
+    return False
 
 def start_training():
     """Start federated learning training"""
@@ -589,7 +651,7 @@ def update_dashboard(n):
                              color="success" if mlflow_metrics['available'] else "secondary")
                 ], width=6, className="text-end")
             ]),
-            html.Small(f"Experiments: {mlflow_metrics['count']}", className="text-muted")
+            html.Small(f"Experiments: {mlflow_metrics['count']} | Runs: {mlflow_metrics.get('runs', 0)}", className="text-muted")
         ])
     ]
     
@@ -642,10 +704,12 @@ def update_dashboard(n):
         height=250
     )
     
-    # Training logs
+    # Training logs - get from containers
+    container_logs = get_container_logs()
+    
     if training_active and training_process:
         try:
-            # Read new output
+            # Read new output from training process
             while True:
                 line = training_process.stdout.readline()
                 if not line:
@@ -654,8 +718,12 @@ def update_dashboard(n):
         except:
             pass
     
-    if log_queue:
-        log_lines = [html.Div(log, style={'marginBottom': '2px'}) for log in list(log_queue)[-20:]]
+    # Combine process logs and container logs
+    all_logs = list(log_queue) + container_logs
+    
+    if all_logs:
+        log_lines = [html.Div(log, style={'marginBottom': '2px', 'fontFamily': 'monospace', 'fontSize': '0.85em'}) 
+                    for log in all_logs[-30:]]
     else:
         log_lines = [html.Div("No training logs available. Start training to see logs.", 
                              className="text-muted")]
@@ -778,6 +846,21 @@ def save_config_values(n_clicks, num_clients, fraction, lr, local_epochs, server
     """Save configuration values"""
     config = load_config()
     
+    # Check if config was loaded successfully
+    if not config:
+        return dbc.Alert([
+            html.I(className="fas fa-exclamation-triangle me-2"),
+            "Error: Could not load configuration file!"
+        ], color="danger")
+    
+    # Ensure required keys exist
+    if 'topology' not in config:
+        config['topology'] = {}
+    if 'train' not in config:
+        config['train'] = {}
+    if 'data' not in config:
+        config['data'] = {}
+    
     # Update configuration
     config['topology']['num_clients'] = num_clients
     config['topology']['fraction'] = fraction
@@ -819,8 +902,12 @@ def update_detailed_logs(is_open, n):
     if not is_open:
         return no_update
     
-    if log_queue:
-        return "\n".join(list(log_queue))
+    # Get container logs
+    container_logs = get_container_logs()
+    all_logs = list(log_queue) + container_logs
+    
+    if all_logs:
+        return "\n".join(all_logs[-200:])  # Show last 200 lines
     else:
         return "No logs available. Start training to see detailed logs."
 

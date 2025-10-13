@@ -10,28 +10,14 @@ services:
       - 9093:9093
     volumes:
       - superlink-state:/app/state
+    networks:
+      - fl-network
 
   # create a SuperExec service for SuperLink to execute ServerApps
   superexec-serverapp:
     build:
       context: ..
-      dockerfile_inline: |
-        FROM flwr/superexec:${FLWR_VERSION:-1.22.0}
-
-        # gcc is required for the fastai quickstart example
-        USER root
-        RUN apt-get update \
-            && apt-get -y --no-install-recommends install \
-            build-essential \
-            && rm -rf /var/lib/apt/lists/*
-        USER app
-
-        WORKDIR /app
-        COPY --chown=app:app complete/fl/ /app/
-        RUN sed -i 's/.*flwr\[simulation\].*//' pyproject.toml \
-          && python -m pip install -e . --no-cache-dir
-
-        ENTRYPOINT ["flower-superexec"]
+      dockerfile: complete/fl/Dockerfile
     command:
       - --insecure
       - --plugin-type
@@ -41,11 +27,14 @@ services:
     restart: on-failure:3
     depends_on:
       - superlink
+      - mlflow
     environment:
       - FL_CONFIG_PATH=/app/config/default.yaml
       - MLFLOW_TRACKING_URI=http://mlflow:5000
     volumes:
       - ./fl/config/default.yaml:/app/config/default.yaml:ro
+    networks:
+      - fl-network
 
   # create multiple SuperNode services with different node configs
   supernode-1:
@@ -62,6 +51,8 @@ services:
       - "partition-id=0 num-partitions=3"
     depends_on:
       - superlink
+    networks:
+      - fl-network
 
   supernode-2:
     image: flwr/supernode:${FLWR_VERSION:-1.22.0}
@@ -77,6 +68,8 @@ services:
       - "partition-id=1 num-partitions=3"
     depends_on:
       - superlink
+    networks:
+      - fl-network
 
   supernode-3:
     image: flwr/supernode:${FLWR_VERSION:-1.22.0}
@@ -92,27 +85,14 @@ services:
       - "partition-id=2 num-partitions=3"
     depends_on:
       - superlink
+    networks:
+      - fl-network
 
   # create SuperExec services for each SuperNode to execute ClientApps
   superexec-clientapp-1:
     build:
       context: ..
-      dockerfile_inline: |
-        FROM flwr/superexec:${FLWR_VERSION:-1.22.0}
-
-        USER root
-        RUN apt-get update \
-            && apt-get -y --no-install-recommends install \
-            build-essential \
-            && rm -rf /var/lib/apt/lists/*
-        USER app
-
-        WORKDIR /app
-        COPY --chown=app:app complete/fl/ /app/
-        RUN sed -i 's/.*flwr\[simulation\].*//' pyproject.toml \
-          && python -m pip install -e . --no-cache-dir
-
-        ENTRYPOINT ["flower-superexec"]
+      dockerfile: complete/fl/Dockerfile
     command:
       - --insecure
       - --plugin-type
@@ -126,31 +106,19 @@ services:
     stop_signal: SIGINT
     depends_on:
       - supernode-1
+      - mlflow
     environment:
       - FL_CONFIG_PATH=/app/config/default.yaml
       - MLFLOW_TRACKING_URI=http://mlflow:5000
     volumes:
       - ./fl/config/default.yaml:/app/config/default.yaml:ro
+    networks:
+      - fl-network
 
   superexec-clientapp-2:
     build:
       context: ..
-      dockerfile_inline: |
-        FROM flwr/superexec:${FLWR_VERSION:-1.22.0}
-
-        USER root
-        RUN apt-get update \
-            && apt-get -y --no-install-recommends install \
-            build-essential \
-            && rm -rf /var/lib/apt/lists/*
-        USER app
-
-        WORKDIR /app
-        COPY --chown=app:app complete/fl/ /app/
-        RUN sed -i 's/.*flwr\[simulation\].*//' pyproject.toml \
-          && python -m pip install -e . --no-cache-dir
-
-        ENTRYPOINT ["flower-superexec"]
+      dockerfile: complete/fl/Dockerfile
     command:
       - --insecure
       - --plugin-type
@@ -164,31 +132,19 @@ services:
     stop_signal: SIGINT
     depends_on:
       - supernode-2
+      - mlflow
     environment:
       - FL_CONFIG_PATH=/app/config/default.yaml
       - MLFLOW_TRACKING_URI=http://mlflow:5000
     volumes:
       - ./fl/config/default.yaml:/app/config/default.yaml:ro
+    networks:
+      - fl-network
 
   superexec-clientapp-3:
     build:
       context: ..
-      dockerfile_inline: |
-        FROM flwr/superexec:${FLWR_VERSION:-1.22.0}
-
-        USER root
-        RUN apt-get update \
-            && apt-get -y --no-install-recommends install \
-            build-essential \
-            && rm -rf /var/lib/apt/lists/*
-        USER app
-
-        WORKDIR /app
-        COPY --chown=app:app complete/fl/ /app/
-        RUN sed -i 's/.*flwr\[simulation\].*//' pyproject.toml \
-          && python -m pip install -e . --no-cache-dir
-
-        ENTRYPOINT ["flower-superexec"]
+      dockerfile: complete/fl/Dockerfile
     command:
       - --insecure
       - --plugin-type
@@ -202,70 +158,49 @@ services:
     stop_signal: SIGINT
     depends_on:
       - supernode-3
+      - mlflow
     environment:
       - FL_CONFIG_PATH=/app/config/default.yaml
       - MLFLOW_TRACKING_URI=http://mlflow:5000
     volumes:
       - ./fl/config/default.yaml:/app/config/default.yaml:ro
+    networks:
+      - fl-network
 
   # Federated Learning Platform UI
   fl-platform-ui:
     build:
       context: ..
-      dockerfile_inline: |
-        FROM python:3.10-slim
-
-        WORKDIR /app
-
-        # Install system dependencies
-        RUN apt-get update && apt-get install -y \
-            curl \
-            && rm -rf /var/lib/apt/lists/*
-
-        # Install Python dependencies
-        RUN pip install --no-cache-dir \
-            flask \
-            requests \
-            docker \
-            psutil \
-            matplotlib \
-            plotly \
-            dash \
-            dash-bootstrap-components
-
-        # Copy UI files
-        COPY --chown=root:root platform-ui/ /app/
-
-        EXPOSE 8050
-
-        CMD ["python", "app.py"]
+      dockerfile: platform-ui/Dockerfile
     ports:
       - "8050:8050"
     environment:
       - FLOWER_SUPERLINK_URL=http://superlink:9093
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
     depends_on:
       - superlink
+      - mlflow
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./fl/config:/config:rw
+    networks:
+      - fl-network
 
   # MLflow tracking server
   mlflow:
     build:
       context: ..
-      dockerfile_inline: |
-        FROM python:3.10-slim
-
-        WORKDIR /app
-
-        RUN pip install --no-cache-dir mlflow
-
-        EXPOSE 5000
-
-        CMD ["mlflow", "server", "--host", "0.0.0.0", "--backend-store-uri", "sqlite:///mlflow.db"]
+      dockerfile: complete/mlflow.Dockerfile
     ports:
       - "5000:5000"
     volumes:
       - mlflow-data:/app
+    networks:
+      - fl-network
+
+networks:
+  fl-network:
+    driver: bridge
 
 volumes:
   superlink-state:
