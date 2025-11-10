@@ -183,6 +183,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./fl/config:/config:rw
+      - .:/complete:ro  # Mount complete directory for training control
     networks:
       - fl-network
 

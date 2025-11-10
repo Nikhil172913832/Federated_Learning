@@ -1,0 +1,331 @@
+/* MLflow Dark Mode Professional Theme */
+
+/* Global Dark Background */
+body,
+.App,
+#root,
+.main-content,
+.container-fluid {
+    background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%) !important;
+    background-attachment: fixed !important;
+    color: #e0e0e0 !important;
+}
+
+/* Header and Navigation */
+header,
+.navbar,
+.header,
+nav {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.18) !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Cards and Panels */
+.card,
+.panel,
+.experiment-view-container,
+.run-view-container,
+.metric-view-container,
+div[class*="card"],
+div[class*="panel"],
+.mlflow-card {
+    background: rgba(43, 48, 53, 0.9) !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    border-radius: 15px !important;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37) !important;
+    backdrop-filter: blur(4px) !important;
+    color: #e0e0e0 !important;
+}
+
+/* Tables */
+table,
+.table,
+.ag-theme-balham,
+.ag-root-wrapper {
+    background-color: rgba(26, 29, 32, 0.9) !important;
+    color: #e0e0e0 !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+thead,
+.ag-header {
+    background: linear-gradient(135deg, #2b3035 0%, #1a1d20 100%) !important;
+    color: #fff !important;
+    border-bottom: 2px solid #667eea !important;
+}
+
+th,
+.ag-header-cell {
+    background: linear-gradient(135deg, #2b3035 0%, #1a1d20 100%) !important;
+    color: #fff !important;
+    font-weight: 600 !important;
+}
+
+tr,
+.ag-row {
+    background-color: rgba(26, 29, 32, 0.8) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+tr:hover,
+.ag-row:hover {
+    background-color: rgba(102, 126, 234, 0.2) !important;
+}
+
+td,
+.ag-cell {
+    color: #e0e0e0 !important;
+    border-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Buttons */
+button,
+.btn,
+.ant-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    color: #fff !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3) !important;
+    transition: all 0.3s ease !important;
+}
+
+button:hover,
+.btn:hover,
+.ant-btn:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4) !important;
+}
+
+button.btn-primary,
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+}
+
+button.btn-secondary,
+.btn-secondary {
+    background: linear-gradient(135deg, #2b3035 0%, #1a1d20 100%) !important;
+}
+
+/* Input Fields */
+input,
+textarea,
+select,
+.form-control,
+.ant-input,
+.ant-select-selector {
+    background-color: rgba(26, 29, 32, 0.9) !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    color: #e0e0e0 !important;
+    border-radius: 8px !important;
+}
+
+input:focus,
+textarea:focus,
+select:focus,
+.form-control:focus,
+.ant-input:focus,
+.ant-select-focused .ant-select-selector {
+    background-color: rgba(26, 29, 32, 0.95) !important;
+    border-color: #667eea !important;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25) !important;
+    outline: none !important;
+}
+
+/* Sidebar */
+.sidebar,
+.sidebar-container,
+aside {
+    background: rgba(26, 29, 32, 0.95) !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Links */
+a {
+    color: #8b9dc3 !important;
+}
+
+a:hover {
+    color: #667eea !important;
+}
+
+/* Modals */
+.modal-content,
+.ant-modal-content {
+    background: rgba(43, 48, 53, 0.98) !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    border-radius: 15px !important;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5) !important;
+}
+
+.modal-header,
+.ant-modal-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+    color: #fff !important;
+}
+
+.modal-body,
+.ant-modal-body {
+    background-color: rgba(43, 48, 53, 0.98) !important;
+    color: #e0e0e0 !important;
+}
+
+/* Code Blocks */
+code,
+pre,
+.code-block {
+    background-color: #0d1117 !important;
+    color: #c9d1d9 !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 8px !important;
+    padding: 12px !important;
+}
+
+/* Charts and Plots */
+.plot-container,
+.js-plotly-plot {
+    background-color: rgba(26, 29, 32, 0.9) !important;
+    border-radius: 15px !important;
+    padding: 15px !important;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: #1a1d20;
+    border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+
+/* Tabs */
+.nav-tabs,
+.ant-tabs-nav {
+    background: rgba(26, 29, 32, 0.9) !important;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.nav-tabs .nav-link,
+.ant-tabs-tab {
+    color: #8b9dc3 !important;
+    border: none !important;
+}
+
+.nav-tabs .nav-link.active,
+.ant-tabs-tab-active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    color: #fff !important;
+    border-radius: 8px 8px 0 0 !important;
+}
+
+/* Badges and Labels */
+.badge,
+.label,
+.ant-tag {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    color: #fff !important;
+    border-radius: 12px !important;
+    padding: 4px 12px !important;
+}
+
+/* Alerts */
+.alert {
+    background: rgba(43, 48, 53, 0.9) !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    border-radius: 10px !important;
+    color: #e0e0e0 !important;
+}
+
+.alert-info {
+    border-left: 4px solid #667eea !important;
+}
+
+.alert-success {
+    border-left: 4px solid #28a745 !important;
+}
+
+.alert-warning {
+    border-left: 4px solid #ffc107 !important;
+}
+
+.alert-danger {
+    border-left: 4px solid #dc3545 !important;
+}
+
+/* Dropdowns */
+.dropdown-menu,
+.ant-dropdown-menu {
+    background: rgba(43, 48, 53, 0.98) !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    border-radius: 10px !important;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4) !important;
+}
+
+.dropdown-item,
+.ant-dropdown-menu-item {
+    color: #e0e0e0 !important;
+}
+
+.dropdown-item:hover,
+.ant-dropdown-menu-item:hover {
+    background: rgba(102, 126, 234, 0.2) !important;
+}
+
+/* Pagination */
+.pagination,
+.ant-pagination {
+    color: #e0e0e0 !important;
+}
+
+.page-item .page-link,
+.ant-pagination-item {
+    background: rgba(43, 48, 53, 0.9) !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    color: #e0e0e0 !important;
+}
+
+.page-item.active .page-link,
+.ant-pagination-item-active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    border-color: #667eea !important;
+}
+
+/* Text Colors */
+.text-muted {
+    color: #8b9dc3 !important;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: #fff !important;
+}
+
+/* Panels and Sections */
+.panel-heading,
+.panel-title {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    color: #fff !important;
+}
+
+.panel-body {
+    background: rgba(43, 48, 53, 0.9) !important;
+    color: #e0e0e0 !important;
+}
+
+/* Loading Spinner */
+.spinner-border,
+.ant-spin {
+    color: #667eea !important;
+}

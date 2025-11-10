@@ -23,9 +23,98 @@ import queue
 import socket
 from collections import deque
 
-# Initialize Dash app with a modern theme
-app = dash.Dash(__name__, external_stylesheets=[dbc.themes.LUX, dbc.icons.FONT_AWESOME])
+# Initialize Dash app with a modern dark theme
+app = dash.Dash(__name__, external_stylesheets=[dbc.themes.CYBORG, dbc.icons.FONT_AWESOME])
 app.title = "Federated Learning Platform"
+
+# Inject custom CSS for dark mode aesthetics
+app.index_string = '''
+<!DOCTYPE html>
+<html>
+    <head>
+        {%metas%}
+        <title>{%title%}</title>
+        {%favicon%}
+        {%css%}
+        <style>
+            body {
+                background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%) !important;
+                background-attachment: fixed !important;
+            }
+            
+            .hover-lift:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 12px 24px 0 rgba(0, 0, 0, 0.5) !important;
+            }
+            
+            .card {
+                transition: all 0.3s ease;
+            }
+            
+            .modal-content {
+                background-color: #2b3035 !important;
+                border: 1px solid rgba(255, 255, 255, 0.18) !important;
+            }
+            
+            .modal-header {
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+            }
+            
+            .modal-footer {
+                border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+            }
+            
+            .form-control, .form-select {
+                background-color: #1a1d20 !important;
+                border-color: rgba(255, 255, 255, 0.18) !important;
+                color: #fff !important;
+            }
+            
+            .form-control:focus, .form-select:focus {
+                background-color: #1a1d20 !important;
+                border-color: #667eea !important;
+                box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25) !important;
+            }
+            
+            .table {
+                color: #adb5bd !important;
+            }
+            
+            .table-dark {
+                background-color: #1a1d20 !important;
+            }
+            
+            /* Scrollbar styling */
+            ::-webkit-scrollbar {
+                width: 10px;
+                height: 10px;
+            }
+            
+            ::-webkit-scrollbar-track {
+                background: #1a1d20;
+                border-radius: 5px;
+            }
+            
+            ::-webkit-scrollbar-thumb {
+                background: #667eea;
+                border-radius: 5px;
+            }
+            
+            ::-webkit-scrollbar-thumb:hover {
+                background: #764ba2;
+            }
+        </style>
+    </head>
+    <body>
+        {%app_entry%}
+        <footer>
+            {%config%}
+            {%scripts%}
+            {%renderer%}
+        </footer>
+    </body>
+</html>
+'''
 
 # Global variables for data storage
 container_stats = {}
@@ -190,8 +279,16 @@ def start_training():
     """Start federated learning training"""
     global training_active, training_process
     try:
-        # Change to complete directory
-        complete_dir = os.path.join(os.path.dirname(__file__), '../complete')
+        # Determine complete directory based on environment
+        # In Docker container, use /complete, otherwise use relative path
+        if os.path.exists('/complete'):
+            complete_dir = '/complete'
+        else:
+            complete_dir = os.path.join(os.path.dirname(__file__), '../complete')
+        
+        # Verify directory exists
+        if not os.path.exists(complete_dir):
+            return False, f"Error: Complete directory not found at {complete_dir}"
         
         # Start containers if not running
         subprocess.run(['docker', 'compose', '-f', 'compose-with-ui.yml', 'up', '-d'], 
@@ -221,7 +318,12 @@ def stop_training():
             training_process.terminate()
             training_process.wait(timeout=5)
         
-        complete_dir = os.path.join(os.path.dirname(__file__), '../complete')
+        # Determine complete directory based on environment
+        if os.path.exists('/complete'):
+            complete_dir = '/complete'
+        else:
+            complete_dir = os.path.join(os.path.dirname(__file__), '../complete')
+        
         subprocess.run(['docker', 'compose', '-f', 'compose-with-ui.yml', 'down'], 
                       cwd=complete_dir, check=True)
         
@@ -231,19 +333,32 @@ def stop_training():
         return False, f"Error stopping training: {str(e)}"
 
 
-# Custom CSS styles
+# Custom CSS styles for dark mode aesthetic
 custom_style = {
     'header': {
         'background': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
         'padding': '2rem',
-        'borderRadius': '10px',
+        'borderRadius': '15px',
         'marginBottom': '2rem',
-        'boxShadow': '0 4px 6px rgba(0,0,0,0.1)'
+        'boxShadow': '0 8px 32px 0 rgba(102, 126, 234, 0.37)',
+        'border': '1px solid rgba(255, 255, 255, 0.18)',
+        'backdropFilter': 'blur(4px)'
     },
     'card': {
-        'borderRadius': '10px',
-        'boxShadow': '0 2px 4px rgba(0,0,0,0.1)',
-        'marginBottom': '1.5rem'
+        'borderRadius': '15px',
+        'boxShadow': '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+        'marginBottom': '1.5rem',
+        'border': '1px solid rgba(255, 255, 255, 0.18)',
+        'backgroundColor': '#2b3035',
+        'backdropFilter': 'blur(4px)'
+    },
+    'stat-card': {
+        'borderRadius': '15px',
+        'boxShadow': '0 4px 16px 0 rgba(0, 0, 0, 0.3)',
+        'marginBottom': '1rem',
+        'border': '1px solid rgba(255, 255, 255, 0.1)',
+        'background': 'linear-gradient(135deg, #2b3035 0%, #1a1d20 100%)',
+        'transition': 'transform 0.3s ease, box-shadow 0.3s ease'
     }
 }
 
@@ -319,44 +434,44 @@ app.layout = dbc.Container([
                         dbc.CardBody([
                             html.Div([
                                 html.I(className="fas fa-server fa-2x text-primary mb-2"),
-                                html.H3(id="cpu-stat", children="0%", className="mb-1"),
-                                html.P("CPU Usage", className="text-muted mb-0")
+                                html.H3(id="cpu-stat", children="0%", className="mb-1", style={'fontWeight': 'bold'}),
+                                html.P("CPU Usage", className="text-muted mb-0", style={'fontSize': '0.85rem'})
                             ], className="text-center")
                         ])
-                    ], style=custom_style['card'])
+                    ], style=custom_style['stat-card'], className="hover-lift")
                 ], width=6, md=3),
                 dbc.Col([
                     dbc.Card([
                         dbc.CardBody([
                             html.Div([
                                 html.I(className="fas fa-memory fa-2x text-success mb-2"),
-                                html.H3(id="memory-stat", children="0%", className="mb-1"),
-                                html.P("Memory Usage", className="text-muted mb-0")
+                                html.H3(id="memory-stat", children="0%", className="mb-1", style={'fontWeight': 'bold'}),
+                                html.P("Memory Usage", className="text-muted mb-0", style={'fontSize': '0.85rem'})
                             ], className="text-center")
                         ])
-                    ], style=custom_style['card'])
+                    ], style=custom_style['stat-card'], className="hover-lift")
                 ], width=6, md=3),
                 dbc.Col([
                     dbc.Card([
                         dbc.CardBody([
                             html.Div([
                                 html.I(className="fas fa-hdd fa-2x text-warning mb-2"),
-                                html.H3(id="disk-stat", children="0%", className="mb-1"),
-                                html.P("Disk Usage", className="text-muted mb-0")
+                                html.H3(id="disk-stat", children="0%", className="mb-1", style={'fontWeight': 'bold'}),
+                                html.P("Disk Usage", className="text-muted mb-0", style={'fontSize': '0.85rem'})
                             ], className="text-center")
                         ])
-                    ], style=custom_style['card'])
+                    ], style=custom_style['stat-card'], className="hover-lift")
                 ], width=6, md=3),
                 dbc.Col([
                     dbc.Card([
                         dbc.CardBody([
                             html.Div([
                                 html.I(className="fas fa-docker fa-2x text-info mb-2"),
-                                html.H3(id="container-count", children="0", className="mb-1"),
-                                html.P("Containers", className="text-muted mb-0")
+                                html.H3(id="container-count", children="0", className="mb-1", style={'fontWeight': 'bold'}),
+                                html.P("Containers", className="text-muted mb-0", style={'fontSize': '0.85rem'})
                             ], className="text-center")
                         ])
-                    ], style=custom_style['card'])
+                    ], style=custom_style['stat-card'], className="hover-lift")
                 ], width=6, md=3),
             ])
         ], md=12, lg=8),
@@ -415,13 +530,15 @@ app.layout = dbc.Container([
                     html.Div(id="training-logs", 
                             style={
                                 'height': '300px', 
-                                'overflowY': 'scroll',
-                                'backgroundColor': '#1e1e1e',
-                                'padding': '10px',
-                                'borderRadius': '5px',
-                                'fontFamily': 'monospace',
-                                'fontSize': '0.9rem',
-                                'color': '#d4d4d4'
+                                'overflowY': 'auto',
+                                'backgroundColor': '#0d1117',
+                                'padding': '15px',
+                                'borderRadius': '8px',
+                                'fontFamily': "'Fira Code', 'Consolas', monospace",
+                                'fontSize': '0.85rem',
+                                'color': '#c9d1d9',
+                                'border': '1px solid rgba(255, 255, 255, 0.1)',
+                                'boxShadow': 'inset 0 2px 4px rgba(0, 0, 0, 0.3)'
                             })
                 ])
             ], style=custom_style['card'])
@@ -497,14 +614,16 @@ app.layout = dbc.Container([
             html.Div(id="detailed-logs", 
                     style={
                         'height': '500px', 
-                        'overflowY': 'scroll',
-                        'backgroundColor': '#1e1e1e',
-                        'padding': '15px',
-                        'borderRadius': '5px',
-                        'fontFamily': 'monospace',
+                        'overflowY': 'auto',
+                        'backgroundColor': '#0d1117',
+                        'padding': '20px',
+                        'borderRadius': '8px',
+                        'fontFamily': "'Fira Code', 'Consolas', monospace",
                         'fontSize': '0.85rem',
-                        'color': '#d4d4d4',
-                        'whiteSpace': 'pre-wrap'
+                        'color': '#c9d1d9',
+                        'whiteSpace': 'pre-wrap',
+                        'border': '1px solid rgba(255, 255, 255, 0.1)',
+                        'boxShadow': 'inset 0 2px 4px rgba(0, 0, 0, 0.3)'
                     })
         ]),
         dbc.ModalFooter([
@@ -532,7 +651,11 @@ app.layout = dbc.Container([
     # Store for training state
     dcc.Store(id='training-state', data={'active': False}),
     
-], fluid=True, style={'backgroundColor': '#f8f9fa', 'minHeight': '100vh', 'padding': '2rem'})
+], fluid=True, style={
+    'backgroundColor': 'transparent',
+    'minHeight': '100vh',
+    'padding': '2rem'
+})
 
 
 
@@ -680,26 +803,38 @@ def update_dashboard(n):
         ))
     
     fig.update_layout(
-        plot_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(13, 17, 23, 0.8)',
         paper_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='#c9d1d9'),
         margin=dict(l=40, r=20, t=20, b=40),
         xaxis=dict(
             showgrid=True,
-            gridcolor='rgba(0,0,0,0.1)',
-            title=""
+            gridcolor='rgba(255, 255, 255, 0.1)',
+            title="",
+            color='#8b9dc3'
         ),
         yaxis=dict(
             showgrid=True,
-            gridcolor='rgba(0,0,0,0.1)',
+            gridcolor='rgba(255, 255, 255, 0.1)',
             title="Usage %",
-            range=[0, 100]
+            range=[0, 100],
+            color='#8b9dc3'
         ),
         legend=dict(
             orientation="h",
             yanchor="bottom",
             y=1.02,
             xanchor="right",
-            x=1
+            x=1,
+            bgcolor='rgba(43, 48, 53, 0.8)',
+            bordercolor='rgba(255, 255, 255, 0.18)',
+            borderwidth=1
+        ),
+        hovermode='x unified',
+        hoverlabel=dict(
+            bgcolor='rgba(43, 48, 53, 0.95)',
+            font_size=12,
+            font_family='monospace'
         ),
         height=250
     )

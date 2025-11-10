@@ -1,6 +1,6 @@
 # Federated Learning Platform
 
-A production-ready federated learning platform using Flower framework with Docker containerized clients, real-time monitoring dashboard, and MLflow experiment tracking.
+A federated learning platform using Flower framework with Docker containerized clients, real-time monitoring dashboard, and MLflow experiment tracking.
 
 ## Features
 
