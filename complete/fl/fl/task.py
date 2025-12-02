@@ -14,7 +14,11 @@ from fl.partitioning import build_partitioner
 
 
 class Net(nn.Module):
-    """Model (simple CNN adapted from 'PyTorch: A 60 Minute Blitz')"""
+    """Model (simple CNN adapted from 'PyTorch: A 60 Minute Blitz')
+    
+    Note: This is the legacy model class. For new implementations, 
+    use fl.models.SimpleCNN instead for better modularity.
+    """
 
     def __init__(self):
         super(Net, self).__init__()
