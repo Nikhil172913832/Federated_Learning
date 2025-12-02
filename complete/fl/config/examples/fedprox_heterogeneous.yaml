@@ -1,0 +1,54 @@
+# FedProx Configuration
+# Federated optimization with proximal term for heterogeneous systems
+
+experiment:
+  name: "fedprox_heterogeneous"
+  description: "FedProx for handling system heterogeneity"
+  seed: 42
+  tags:
+    - fedprox
+    - heterogeneous
+    - proximal
+
+model:
+  architecture: "simple_cnn"
+  input_channels: 1
+  num_classes: 10
+
+federated:
+  num_clients: 100
+  clients_per_round: 10
+  num_rounds: 100
+  aggregation_strategy: "fedprox"
+  client_selection: "random"
+
+train:
+  local_epochs: 5
+  lr: 0.001
+  batch_size: 32
+  optimizer: "adam"
+
+personalization:
+  method: "fedprox"
+  fedprox_mu: 0.01  # Proximal term coefficient
+
+data:
+  dataset: "albertvillanova/medmnist-v2"
+  subset: "pneumoniamnist"
+  batch_size: 32
+  non_iid:
+    enabled: true
+    type: "quantity_skew"
+    params:
+      shard_size: 150
+
+privacy:
+  enable_dp: false
+
+security:
+  secure_agg: false
+  byzantine_robust: false
+
+tracking:
+  use_mlflow: true
+  use_wandb: false

@@ -1,0 +1,49 @@
+# Byzantine-Robust Configuration
+# FL with defense against malicious clients
+
+experiment:
+  name: "byzantine_robust"
+  description: "Byzantine-robust FL with Krum aggregation"
+  seed: 42
+  tags:
+    - security
+    - byzantine-robust
+    - krum
+
+model:
+  architecture: "simple_cnn"
+  input_channels: 1
+  num_classes: 10
+
+federated:
+  num_clients: 100
+  clients_per_round: 20  # Need more clients for Krum
+  num_rounds: 100
+  aggregation_strategy: "fedavg"
+  client_selection: "random"
+
+train:
+  local_epochs: 5
+  lr: 0.001
+  batch_size: 32
+  optimizer: "adam"
+
+data:
+  dataset: "albertvillanova/medmnist-v2"
+  subset: "pneumoniamnist"
+  batch_size: 32
+  non_iid:
+    enabled: false
+
+privacy:
+  enable_dp: false
+
+security:
+  secure_agg: false
+  byzantine_robust: true
+  strategy: "krum"
+  num_byzantine: 5  # Tolerate up to 5 malicious clients
+
+tracking:
+  use_mlflow: true
+  use_wandb: false

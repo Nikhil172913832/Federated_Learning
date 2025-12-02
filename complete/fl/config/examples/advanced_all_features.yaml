@@ -1,0 +1,107 @@
+# Advanced Configuration
+# Combines multiple advanced features
+
+experiment:
+  name: "advanced_fl"
+  description: "Advanced FL with adaptive strategies and privacy"
+  seed: 42
+  tags:
+    - advanced
+    - adaptive
+    - privacy
+    - fairness
+
+model:
+  architecture: "resnet"
+  input_channels: 1
+  num_classes: 10
+
+federated:
+  num_clients: 100
+  clients_per_round: 15
+  num_rounds: 200
+  aggregation_strategy: "fedadam"
+  client_selection: "importance_sampling"
+  
+  # Client selection config
+  selection_config:
+    method: "importance_sampling"
+    sampling_method: "data_size"
+    fairness_weight: 0.3
+
+train:
+  local_epochs: 5
+  lr: 0.001
+  batch_size: 32
+  optimizer: "adam"
+  
+  # Adaptive learning
+  adaptive:
+    enabled: true
+    early_stopping:
+      enabled: true
+      patience: 10
+      min_delta: 0.001
+    lr_schedule:
+      type: "step"
+      step_size: 50
+      gamma: 0.5
+
+data:
+  dataset: "albertvillanova/medmnist-v2"
+  subset: "pneumoniamnist"
+  batch_size: 32
+  non_iid:
+    enabled: true
+    type: "label_skew"
+    params:
+      alpha: 0.5
+
+preprocess:
+  resize: [28, 28]
+  normalize_mean: [0.5]
+  normalize_std: [0.5]
+  augmentation:
+    enabled: true
+    params:
+      hflip: true
+      rotation_degrees: 15
+      color_jitter: true
+      brightness: 0.2
+      contrast: 0.2
+
+privacy:
+  enable_dp: true
+  dp_sgd:
+    enabled: true
+    epsilon: 2.0
+    delta: 1e-5
+    max_grad_norm: 1.0
+    noise_multiplier: 0.6
+
+security:
+  secure_agg: true
+  byzantine_robust: true
+  strategy: "trimmed_mean"
+  num_byzantine: 3
+
+personalization:
+  method: "fedprox"
+  fedprox_mu: 0.01
+  local_fine_tuning:
+    enabled: true
+    epochs: 2
+    lr: 0.0001
+
+tracking:
+  use_mlflow: true
+  use_wandb: true
+  wandb_project: "advanced-fl"
+  wandb_entity: "your-team"
+  tensorboard: true
+
+communication:
+  compression:
+    enabled: true
+    method: "topk"
+    topk_ratio: 0.1

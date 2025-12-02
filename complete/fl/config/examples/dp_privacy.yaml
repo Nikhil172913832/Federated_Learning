@@ -1,0 +1,54 @@
+# Differential Privacy Configuration
+# FL with differential privacy guarantees
+
+experiment:
+  name: "fedavg_with_dp"
+  description: "FedAvg with differential privacy (DP-SGD)"
+  seed: 42
+  tags:
+    - privacy
+    - differential-privacy
+    - dp-sgd
+
+model:
+  architecture: "simple_cnn"
+  input_channels: 1
+  num_classes: 10
+
+federated:
+  num_clients: 100
+  clients_per_round: 10
+  num_rounds: 150
+  aggregation_strategy: "fedavg"
+  client_selection: "random"
+
+train:
+  local_epochs: 5
+  lr: 0.001
+  batch_size: 32
+  optimizer: "adam"
+
+data:
+  dataset: "albertvillanova/medmnist-v2"
+  subset: "pneumoniamnist"
+  batch_size: 32
+  non_iid:
+    enabled: false
+
+privacy:
+  enable_dp: true
+  dp_sgd:
+    enabled: true
+    epsilon: 1.0
+    delta: 1e-5
+    max_grad_norm: 1.0
+    noise_multiplier: 0.8
+
+security:
+  secure_agg: false
+  byzantine_robust: false
+
+tracking:
+  use_mlflow: true
+  use_wandb: false
+  wandb_project: "fl-privacy"
