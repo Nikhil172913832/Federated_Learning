@@ -60,6 +60,7 @@ This platform implements state-of-the-art federated learning with a focus on **p
 - **Flexible Configuration**: YAML-based configs with hot-reload support
 
 ### Advanced Features
+- **Personalized FL**: Knowledge distillation with LoRA adapters (see [docs/PERSONALIZED_FL.md](docs/PERSONALIZED_FL.md))
 - **Client Selection**: Smart sampling strategies for heterogeneous clients
 - **Communication Efficiency**: Gradient compression and quantization
 - **Fault Tolerance**: Handles client dropouts and network failures
