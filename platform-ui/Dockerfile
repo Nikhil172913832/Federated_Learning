@@ -17,10 +17,10 @@ COPY platform-ui/requirements.txt /app/
 # Install Python dependencies (cached layer)
 # This only re-runs if requirements.txt changes
 # Add retries and increased timeout for network issues
-# Use Tsinghua University PyPI mirror for faster downloads
-RUN pip install --default-timeout=100 --retries 5 --no-cache-dir \
-    --index-url https://pypi.tuna.tsinghua.edu.cn/simple \
-    --trusted-host pypi.tuna.tsinghua.edu.cn \
+# Using Aliyun PyPI mirror for faster downloads
+RUN pip install --default-timeout=600 --retries 15 --no-cache-dir \
+    --index-url https://mirrors.aliyun.com/pypi/simple/ \
+    --trusted-host mirrors.aliyun.com \
     -r requirements.txt
 
 # Copy application code (separate layer - changes frequently)

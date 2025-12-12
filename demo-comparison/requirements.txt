@@ -1,0 +1,20 @@
+# Pneumonia Detection Demo - Requirements
+
+# Web Framework
+Flask
+Werkzeug
+
+# Deep Learning & ML
+tensorflow
+# Note: For TensorFlow with Keras 2.x (legacy) support
+tf_keras
+
+# HuggingFace
+huggingface_hub
+
+# Image Processing
+Pillow
+numpy
+
+# Optional: If you want to add monitoring
+# flask-cors==4.0.0

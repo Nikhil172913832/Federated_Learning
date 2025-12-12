@@ -72,6 +72,21 @@ echo "  - 3 SuperExec-ClientApps (client containers)"
 echo "  - Platform UI (monitoring dashboard)"
 echo "  - MLflow tracking server"
 echo ""
+echo "Note: Using CPU-optimized Docker build for faster installation."
+echo "      To use GPU version, set: export FL_DOCKERFILE=Dockerfile"
+echo ""
+
+# Check if images are already built
+if docker images | grep -q "complete-superexec-serverapp"; then
+    echo "✓ Pre-built images found. Starting services..."
+else
+    echo "⚠ Images not found. Building sequentially to prevent system overload..."
+    echo "  This may take 10-15 minutes but is much more stable."
+    echo ""
+    read -p "Press Enter to start sequential build, or Ctrl+C to cancel..."
+    ../build-images-sequential.sh || { echo "Build failed"; exit 1; }
+fi
+echo ""
 
 cd complete
 
@@ -79,10 +94,10 @@ cd complete
 echo "Stopping any existing services..."
 docker compose -f compose-with-ui.yml down 2>/dev/null || true
 
-# Start the platform
+# Start the platform (without --build flag since images are pre-built)
 echo "Starting federated learning platform..."
 export PROJECT_DIR=$PROJECT_DIR
-docker compose -f compose-with-ui.yml up --build -d
+docker compose -f compose-with-ui.yml up -d
 
 echo ""
 echo "Step 2: Waiting for services to be ready..."

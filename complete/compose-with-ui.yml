@@ -15,9 +15,10 @@ services:
 
   # create a SuperExec service for SuperLink to execute ServerApps
   superexec-serverapp:
+    image: complete-superexec-serverapp:latest
     build:
       context: ..
-      dockerfile: complete/fl/Dockerfile
+      dockerfile: complete/fl/${FL_DOCKERFILE:-Dockerfile.cpu}
     command:
       - --insecure
       - --plugin-type
@@ -90,9 +91,10 @@ services:
 
   # create SuperExec services for each SuperNode to execute ClientApps
   superexec-clientapp-1:
+    image: complete-superexec-clientapp:latest
     build:
       context: ..
-      dockerfile: complete/fl/Dockerfile
+      dockerfile: complete/fl/${FL_DOCKERFILE:-Dockerfile.cpu}
     command:
       - --insecure
       - --plugin-type
@@ -116,9 +118,10 @@ services:
       - fl-network
 
   superexec-clientapp-2:
+    image: complete-superexec-clientapp:latest
     build:
       context: ..
-      dockerfile: complete/fl/Dockerfile
+      dockerfile: complete/fl/${FL_DOCKERFILE:-Dockerfile.cpu}
     command:
       - --insecure
       - --plugin-type
@@ -142,9 +145,10 @@ services:
       - fl-network
 
   superexec-clientapp-3:
+    image: complete-superexec-clientapp:latest
     build:
       context: ..
-      dockerfile: complete/fl/Dockerfile
+      dockerfile: complete/fl/${FL_DOCKERFILE:-Dockerfile.cpu}
     command:
       - --insecure
       - --plugin-type
@@ -169,6 +173,7 @@ services:
 
   # Federated Learning Platform UI
   fl-platform-ui:
+    image: complete-fl-platform-ui:latest
     build:
       context: ..
       dockerfile: platform-ui/Dockerfile
@@ -189,6 +194,7 @@ services:
 
   # MLflow tracking server
   mlflow:
+    image: complete-mlflow:latest
     build:
       context: ..
       dockerfile: complete/mlflow.Dockerfile

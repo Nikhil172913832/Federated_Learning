@@ -13,11 +13,10 @@ version = "1.0.0"
 description = ""
 license = "Apache-2.0"
 # Dependencies for your Flower App
+# Note: torch and torchvision are installed separately in Dockerfile for CPU/GPU optimization
 dependencies = [
     "flwr[simulation]",
     "flwr-datasets[vision]",
-    "torch",
-    "torchvision",
     "pyyaml",
     "opacus",
     "mlflow",

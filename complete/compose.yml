@@ -28,8 +28,10 @@ services:
 
         WORKDIR /app
         COPY --chown=app:app complete/fl/ /app/
-        RUN sed -i 's/.*flwr\[simulation\].*//' pyproject.toml \
-          && python -m pip install -e . --no-cache-dir
+        RUN sed -i 's/.*flwr\\[simulation\\].*//' pyproject.toml \
+          && python -m pip install --default-timeout=600 --retries=15 --no-cache-dir \
+             --index-url https://mirrors.aliyun.com/pypi/simple/ \
+             --trusted-host mirrors.aliyun.com -e .
 
         ENTRYPOINT ["flower-superexec"]
     command:
@@ -112,7 +114,9 @@ services:
         WORKDIR /app
         COPY --chown=app:app complete/fl/ /app/
         RUN sed -i 's/.*flwr\[simulation\].*//' pyproject.toml \
-          && python -m pip install -e . --no-cache-dir
+          && python -m pip install --default-timeout=600 --retries=15 --no-cache-dir \
+             --index-url https://mirrors.aliyun.com/pypi/simple/ \
+             --trusted-host mirrors.aliyun.com -e .
 
         ENTRYPOINT ["flower-superexec"]
     command:
@@ -150,7 +154,9 @@ services:
         WORKDIR /app
         COPY --chown=app:app complete/fl/ /app/
         RUN sed -i 's/.*flwr\[simulation\].*//' pyproject.toml \
-          && python -m pip install -e . --no-cache-dir
+          && python -m pip install --default-timeout=600 --retries=15 --no-cache-dir \
+             --index-url https://mirrors.aliyun.com/pypi/simple/ \
+             --trusted-host mirrors.aliyun.com -e .
 
         ENTRYPOINT ["flower-superexec"]
 
