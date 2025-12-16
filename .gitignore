@@ -86,6 +86,11 @@ client_sqlite/
 # UI (moved to separate branch)
 platform-ui/
 
-# Non-essential scripts
+# Non-essential scripts (removed for clarity)
 build-images-sequential.sh
 verify-platform.sh
+rebuild-dark-mode.sh
+format_code.sh
+check_quality.sh
+quick-start.sh
+run_demo.py
