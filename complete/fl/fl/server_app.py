@@ -9,6 +9,8 @@ from fl.task import Net
 from fl.config import load_run_config, merge_with_context_defaults, set_global_seeds
 from fl.secure import unmask_state_dict
 from fl.tracking import start_run, log_params, log_metrics
+from fl.reproducibility import ensure_reproducibility
+from pathlib import Path
 
 # Create ServerApp
 app = ServerApp()
@@ -43,11 +45,18 @@ def main(grid: Grid, context: Context) -> None:
 
     # Start MLflow run for server
     with start_run(experiment="fl", run_name="server"):
+        # Ensure reproducibility - create and save manifest
+        manifest_dir = Path("experiments") / "server_manifests"
+        manifest = ensure_reproducibility(file_cfg, manifest_dir)
+        
         log_params({
             "num_rounds": num_rounds,
             "fraction_train": fraction_train,
             "lr": lr,
             "num_partitions": 3,  # from the supernode configs
+            "seed": file_cfg.get("seed", 42),
+            "git_commit": manifest.git_commit or "N/A",
+            "dependencies_hash": manifest.dependencies_hash[:16],
         })
         
         # Start strategy, run FedAvg for `num_rounds`

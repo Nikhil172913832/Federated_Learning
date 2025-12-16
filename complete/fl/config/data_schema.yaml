@@ -1,0 +1,24 @@
+# Data Schema Configuration
+
+# Expected image properties
+image_shape: [28, 28]
+num_channels: 1
+num_classes: 10
+
+# Data types
+expected_dtype: float32
+label_dtype: int64
+
+# Quality thresholds
+min_samples_per_partition: 100
+max_class_imbalance: 0.3
+
+# Pixel value range (after normalization)
+pixel_value_range: [-5.0, 5.0]
+
+# Drift detection
+drift_alert_threshold: 0.3
+
+# Outlier detection
+outlier_iqr_threshold: 3.0
+max_outlier_ratio: 0.05

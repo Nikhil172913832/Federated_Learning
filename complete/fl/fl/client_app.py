@@ -11,6 +11,8 @@ from fl.config import load_run_config, merge_with_context_defaults, set_global_s
 from fl.storage import get_client_store
 from fl.secure import mask_state_dict
 from fl.tracking import start_run, log_params, log_metrics
+from fl.reproducibility import ensure_reproducibility
+from pathlib import Path
 
 # Flower ClientApp
 app = ClientApp()
@@ -38,6 +40,10 @@ def train(msg: Message, context: Context):
     store = get_client_store(partition_id, file_cfg)
     trainloader, _ = load_data(partition_id, num_partitions)
 
+    # Ensure reproducibility - create and save manifest
+    manifest_dir = store.root / "manifests"
+    manifest = ensure_reproducibility(file_cfg, manifest_dir)
+
     # Call the training function
     with start_run(experiment="fl", run_name=f"client-{partition_id}"):
         log_params({
@@ -45,6 +51,9 @@ def train(msg: Message, context: Context):
             "num_partitions": num_partitions,
             "local_epochs": int(run_cfg["local-epochs"]),
             "lr": msg.content["config"]["lr"],
+            "seed": file_cfg.get("seed", 42),
+            "git_commit": manifest.git_commit or "N/A",
+            "data_fingerprint": manifest.data_fingerprint[:16] if manifest.data_fingerprint != "N/A" else "N/A",
         })
         train_loss = train_fn(
         model,
