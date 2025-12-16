@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # Federated Learning Platform Launcher
+# Builds images sequentially to prevent system overload
 
 set -e
 
@@ -47,13 +48,14 @@ fi
 echo "✓ Platform UI directory exists"
 
 echo ""
-echo "Building and starting the platform..."
-echo "This will:"
-echo "  1. Build fresh Docker images"
-echo "  2. Start all services"
-echo "  3. Initialize the platform"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  BUILDING IMAGES SEQUENTIALLY"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
-echo "⏱  Expected time: 5-10 minutes (first run)"
+echo "Building images one at a time to prevent system overload..."
+echo "This is slower but more stable for systems with limited resources."
+echo ""
+echo "⏱  Expected time: 10-15 minutes (first run)"
 echo ""
 
 cd complete
@@ -61,13 +63,37 @@ cd complete
 # Stop any existing services
 echo "Stopping any existing services..."
 docker compose -f compose-with-ui.yml down 2>/dev/null || true
-
-# Build and start the platform (fresh build every time)
 echo ""
-echo "Building fresh images and starting services..."
-docker compose -f compose-with-ui.yml up --build -d
 
+# Build images sequentially
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  Step 1/4: Building FL application image"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+docker compose -f compose-with-ui.yml build superexec-serverapp
+echo "✓ FL application image built"
 echo ""
+
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  Step 2/4: Building MLflow server image"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+docker compose -f compose-with-ui.yml build mlflow
+echo "✓ MLflow server image built"
+echo ""
+
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  Step 3/4: Building platform UI image"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+docker compose -f compose-with-ui.yml build platform-ui
+echo "✓ Platform UI image built"
+echo ""
+
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  Step 4/4: Starting all services"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+docker compose -f compose-with-ui.yml up -d
+echo "✓ All services started"
+echo ""
+
 echo "Waiting for services to initialize..."
 echo "This may take up to 60 seconds..."
 sleep 60
