@@ -46,7 +46,20 @@ class FederatedServer:
             
         Returns:
             Aggregated model state dict
+            
+        Raises:
+            ValueError: If client_weights is empty or lengths don't match
         """
+        # Input validation
+        if not client_weights:
+            raise ValueError("client_weights cannot be empty")
+        if len(client_weights) != len(client_sizes):
+            raise ValueError(
+                f"Length mismatch: {len(client_weights)} weights vs {len(client_sizes)} sizes"
+            )
+        if any(size <= 0 for size in client_sizes):
+            raise ValueError("All client_sizes must be positive")
+        
         if self.strategy == "fedavg":
             return self._fedavg_aggregate(client_weights, client_sizes)
         elif self.strategy == "fedprox":

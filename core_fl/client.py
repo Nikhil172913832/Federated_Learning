@@ -54,14 +54,26 @@ class FederatedClient:
         """Train local model on private data.
         
         Args:
-            epochs: Number of local training epochs
-            lr: Learning rate
+            epochs: Number of local training epochs (must be >= 1)
+            lr: Learning rate (must be in (0, 1])
             global_weights: Global model weights (for FedProx)
-            mu: FedProx proximal term coefficient
+            mu: FedProx proximal term coefficient (must be >= 0)
             
         Returns:
             Tuple of (updated weights, average loss)
+            
+        Raises:
+            ValueError: If parameters are invalid
         """
+        # Input validation
+        if epochs < 1:
+            raise ValueError(f"epochs must be >= 1, got {epochs}")
+        if not (0 < lr <= 1.0):
+            raise ValueError(f"lr must be in (0, 1], got {lr}")
+        if mu < 0:
+            raise ValueError(f"mu must be >= 0, got {mu}")
+        if mu > 0 and global_weights is None:
+            raise ValueError("global_weights required when mu > 0 (FedProx)")
         self.model.to(self.device)
         self.model.train()
         

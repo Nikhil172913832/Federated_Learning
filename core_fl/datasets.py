@@ -19,14 +19,24 @@ def load_mnist_federated(
     """Load MNIST dataset partitioned for federated learning.
     
     Args:
-        num_clients: Number of clients to partition data for
-        batch_size: Batch size for data loaders
+        num_clients: Number of clients to partition data for (must be >= 1)
+        batch_size: Batch size for data loaders (must be >= 1)
         iid: Whether to use IID partitioning
-        alpha: Dirichlet alpha for non-IID partitioning (lower = more skew)
+        alpha: Dirichlet alpha for non-IID partitioning (must be > 0, lower = more skew)
         
     Returns:
         Tuple of (list of client train loaders, global test loader)
+        
+    Raises:
+        ValueError: If parameters are invalid
     """
+    # Input validation
+    if num_clients < 1:
+        raise ValueError(f"num_clients must be >= 1, got {num_clients}")
+    if batch_size < 1:
+        raise ValueError(f"batch_size must be >= 1, got {batch_size}")
+    if alpha <= 0:
+        raise ValueError(f"alpha must be > 0, got {alpha}")
     # Load MNIST from HuggingFace
     dataset = load_dataset("ylecun/mnist")
     
