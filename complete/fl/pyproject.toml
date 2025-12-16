@@ -22,6 +22,34 @@ dependencies = [
     "mlflow",
 ]
 
+[project.optional-dependencies]
+dev = [
+    # Testing
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "pytest-benchmark>=4.0.0",
+    "hypothesis>=6.82.0",
+    
+    # Code quality
+    "black>=23.7.0",
+    "flake8>=6.1.0",
+    "mypy>=1.5.0",
+    "isort>=5.12.0",
+    
+    # Data validation
+    "pydantic>=2.0.0",
+    "great-expectations>=0.17.0",
+    
+    # Logging
+    "structlog>=23.1.0",
+    
+    # Utilities
+    "pandas>=2.0.0",
+    "matplotlib>=3.7.0",
+    "seaborn>=0.12.0",
+    "scikit-learn>=1.3.0",
+]
+
 [tool.hatch.build.targets.wheel]
 packages = ["."]
 

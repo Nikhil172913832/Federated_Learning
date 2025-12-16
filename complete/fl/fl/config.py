@@ -11,7 +11,7 @@ import torch
 
 try:
     import yaml  # type: ignore
-except Exception:  # pragma: no cover
+except ImportError:  # pragma: no cover
     yaml = None  # Will raise at runtime if YAML is actually used
 
 
@@ -38,7 +38,13 @@ def load_run_config(config_path: Optional[str] = None) -> Dict[str, Any]:
     )
     cfg_path = Path(cfg_path_str)
     if not cfg_path.exists():
-        raise FileNotFoundError(f"Config file not found: {cfg_path}")
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Config file not found: {cfg_path}")
+        raise FileNotFoundError(
+            f"Config file not found: {cfg_path}\n"
+            f"Searched in: {cfg_path.absolute()}"
+        )
 
     if cfg_path.suffix.lower() in {".yaml", ".yml"}:
         if yaml is None:

@@ -1,0 +1,183 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  lint:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: Cache pip packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          cd complete/fl
+          pip install -e ".[dev]"
+      
+      - name: Run black (check only)
+        run: |
+          cd complete/fl
+          black --check fl/ tests/
+      
+      - name: Run flake8
+        run: |
+          cd complete/fl
+          flake8 fl/ tests/
+      
+      - name: Run mypy
+        run: |
+          cd complete/fl
+          mypy fl/ --ignore-missing-imports
+        continue-on-error: true  # Don't fail on mypy errors initially
+  
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11']
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      
+      - name: Cache pip packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-${{ matrix.python-version }}-pip-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.python-version }}-pip-
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          cd complete/fl
+          pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+          pip install -e ".[dev]"
+      
+      - name: Run unit tests with coverage
+        run: |
+          cd complete/fl
+          pytest tests/ -v \
+            --cov=fl \
+            --cov-report=term-missing \
+            --cov-report=xml \
+            --cov-report=html \
+            -m "not slow"
+      
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./complete/fl/coverage.xml
+          flags: unittests
+          name: codecov-${{ matrix.python-version }}
+          fail_ci_if_error: false
+      
+      - name: Check coverage threshold
+        run: |
+          cd complete/fl
+          coverage report --fail-under=60  # Start with 60%, increase gradually
+  
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          cd complete/fl
+          pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+          pip install -e ".[dev]"
+      
+      - name: Run integration tests
+        run: |
+          cd complete/fl
+          pytest tests/test_integration.py -v
+  
+  regression-tests:
+    name: Model Quality Regression
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          cd complete/fl
+          pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+          pip install -e ".[dev]"
+      
+      - name: Run regression tests
+        run: |
+          cd complete/fl
+          pytest tests/test_model_quality.py -v -m "not slow"
+        continue-on-error: true  # Don't fail initially until baselines are established
+  
+  docker-build:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      
+      - name: Build FL client/server image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./complete/fl
+          file: ./complete/fl/Dockerfile
+          push: false
+          tags: fl-app:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      
+      - name: Build MLflow image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./complete
+          file: ./complete/mlflow.Dockerfile
+          push: false
+          tags: mlflow-server:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

@@ -93,7 +93,28 @@ def apply_transforms(batch):
 
 
 def load_data(partition_id: int, num_partitions: int):
-    """Load partition CIFAR10 data."""
+    """Load partition CIFAR10 data.
+    
+    Args:
+        partition_id: ID of the partition to load (must be in [0, num_partitions))
+        num_partitions: Total number of partitions (must be > 0)
+        
+    Returns:
+        Tuple of (trainloader, testloader)
+        
+    Raises:
+        ValueError: If partition_id or num_partitions are invalid
+    """
+    # Input validation
+    if num_partitions <= 0:
+        raise ValueError(
+            f"num_partitions must be positive, got {num_partitions}"
+        )
+    
+    if not (0 <= partition_id < num_partitions):
+        raise ValueError(
+            f"partition_id must be in [0, {num_partitions}), got {partition_id}"
+        )
     # Only initialize `FederatedDataset` once
     global fds
     if fds is None:
@@ -120,7 +141,31 @@ def load_data(partition_id: int, num_partitions: int):
 
 
 def train(net, trainloader, epochs, lr, device, global_state_dict=None):
-    """Train the model on the training set."""
+    """Train the model on the training set.
+    
+    Args:
+        net: Neural network model
+        trainloader: DataLoader for training data
+        epochs: Number of local epochs (must be >= 1)
+        lr: Learning rate (must be in (0, 1])
+        device: Device to train on
+        global_state_dict: Optional global model parameters for FedProx
+        
+    Returns:
+        Average training loss
+        
+    Raises:
+        ValueError: If epochs or lr are invalid
+    """
+    # Input validation
+    if epochs < 1:
+        raise ValueError(f"epochs must be >= 1, got {epochs}")
+    
+    if not (0 < lr <= 1.0):
+        raise ValueError(f"lr must be in (0, 1], got {lr}")
+    
+    if len(trainloader.dataset) == 0:
+        raise ValueError("trainloader dataset is empty")
     net.to(device)  # move model to GPU if available
     criterion = torch.nn.CrossEntropyLoss().to(device)
     optimizer = torch.optim.Adam(net.parameters(), lr=lr)
@@ -155,7 +200,22 @@ def train(net, trainloader, epochs, lr, device, global_state_dict=None):
 
 
 def test(net, testloader, device):
-    """Validate the model on the test set."""
+    """Validate the model on the test set.
+    
+    Args:
+        net: Neural network model
+        testloader: DataLoader for test data
+        device: Device to run evaluation on
+        
+    Returns:
+        Tuple of (loss, accuracy)
+        
+    Raises:
+        ValueError: If testloader is empty
+    """
+    # Input validation
+    if len(testloader.dataset) == 0:
+        raise ValueError("testloader dataset is empty")
     net.to(device)
     criterion = torch.nn.CrossEntropyLoss()
     correct, loss = 0, 0.0
