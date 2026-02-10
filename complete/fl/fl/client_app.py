@@ -13,7 +13,6 @@ from fl.storage import get_client_store
 from fl.secure import mask_state_dict
 from fl.tracking import start_run, log_params, log_metrics
 from fl.reproducibility import ensure_reproducibility
-from pathlib import Path
 
 # Flower ClientApp
 app = ClientApp()
