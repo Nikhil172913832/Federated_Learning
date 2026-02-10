@@ -1,10 +1,10 @@
 # Federated Learning Platform
 
-**Production-grade federated learning with FedAvg, FedProx, differential privacy, and secure aggregation.**
+Federated learning platform demonstrating privacy-preserving distributed training with production-ready architecture.
 
 ---
 
-## Quick Start (One Command)
+## Quick Start
 
 ```bash
 ./launch-platform.sh
@@ -14,7 +14,7 @@ Then visit:
 - **Dashboard**: http://localhost:8050
 - **MLflow**: http://localhost:5000
 
-**That's it.** The platform will:
+The platform will:
 1. Start FL server and clients
 2. Train across multiple clients
 3. Show real-time progress
@@ -102,20 +102,6 @@ privacy:
     noise_multiplier: 0.8
     target_epsilon: 3.0
 ```
-
----
-
-## Performance
-
-| Configuration | Dataset | Accuracy | Rounds | Time |
-|--------------|---------|----------|--------|------|
-| FedAvg (IID) | MNIST | 98.5% | 10 | 90s |
-| FedAvg (non-IID) | MNIST | 96.8% | 20 | 180s |
-| FedProx | MNIST | 97.3% | 20 | 195s |
-| FedAvg + DP | MNIST | 97.2% | 15 | 120s |
-| FedAvg | PneumoniaMNIST | 94.7% | 50 | 300s |
-
-*Tested on: Intel i7-10700K, 32GB RAM, NVIDIA RTX 3080*
 
 ---
 
