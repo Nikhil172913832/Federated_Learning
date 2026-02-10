@@ -4,7 +4,8 @@ import torch
 from flwr.app import ArrayRecord, Context, Message, MetricRecord, RecordDict
 from flwr.clientapp import ClientApp
 
-from fl.task import Net, load_data
+from fl.models import SimpleCNN
+from fl.task import load_data
 from fl.task import test as test_fn
 from fl.task import train as train_fn
 from fl.config import load_run_config, merge_with_context_defaults, set_global_seeds
@@ -29,7 +30,7 @@ def train(msg: Message, context: Context):
     run_cfg = merge_with_context_defaults(context.run_config, file_cfg.get("train", {}))
 
     # Load the model and initialize it with the received weights
-    model = Net()
+    model = SimpleCNN()
     model.load_state_dict(msg.content["arrays"].to_torch_state_dict())
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model.to(device)
@@ -46,22 +47,26 @@ def train(msg: Message, context: Context):
 
     # Call the training function
     with start_run(experiment="fl", run_name=f"client-{partition_id}"):
-        log_params({
-            "partition_id": partition_id,
-            "num_partitions": num_partitions,
-            "local_epochs": int(run_cfg["local-epochs"]),
-            "lr": msg.content["config"]["lr"],
-            "seed": file_cfg.get("seed", 42),
-            "git_commit": manifest.git_commit or "N/A",
-            "data_fingerprint": manifest.data_fingerprint[:16] if manifest.data_fingerprint != "N/A" else "N/A",
-        })
+        log_params(
+            {
+                "partition_id": partition_id,
+                "num_partitions": num_partitions,
+                "local_epochs": int(run_cfg["local-epochs"]),
+                "lr": msg.content["config"]["lr"],
+                "seed": file_cfg.get("seed", 42),
+                "git_commit": manifest.git_commit or "N/A",
+                "data_fingerprint": manifest.data_fingerprint[:16]
+                if manifest.data_fingerprint != "N/A"
+                else "N/A",
+            }
+        )
         train_loss = train_fn(
-        model,
-        trainloader,
-        int(run_cfg["local-epochs"]),
-        msg.content["config"]["lr"],
-        device,
-        global_state_dict=msg.content["arrays"].to_torch_state_dict(),
+            model,
+            trainloader,
+            int(run_cfg["local-epochs"]),
+            msg.content["config"]["lr"],
+            device,
+            global_state_dict=msg.content["arrays"].to_torch_state_dict(),
         )
         round_idx = int(context.run_config.get("round", 0))
         log_metrics({"train_loss": train_loss}, step=round_idx)
@@ -92,7 +97,7 @@ def evaluate(msg: Message, context: Context):
         set_global_seeds(int(file_cfg["seed"]))
 
     # Load the model and initialize it with the received weights
-    model = Net()
+    model = SimpleCNN()
     model.load_state_dict(msg.content["arrays"].to_torch_state_dict())
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model.to(device)

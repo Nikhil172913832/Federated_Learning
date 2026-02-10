@@ -3,7 +3,7 @@ from pathlib import Path
 
 import torch
 
-from fl.task import Net
+from fl.models import SimpleCNN
 
 
 def main():
@@ -12,7 +12,7 @@ def main():
     args = parser.parse_args()
 
     ckpt_path = Path(args.ckpt)
-    model = Net()
+    model = SimpleCNN()
     state = torch.load(ckpt_path, map_location="cpu")
     model.load_state_dict(state)
     print("Loaded checkpoint:", ckpt_path)
@@ -20,5 +20,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-

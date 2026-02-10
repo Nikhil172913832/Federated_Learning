@@ -1,47 +1,21 @@
 """fl: A Flower / PyTorch app."""
 
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
 from flwr_datasets import FederatedDataset
-from flwr_datasets.partitioner import IidPartitioner
 from torch.utils.data import DataLoader
-from torchvision.transforms import Compose, Normalize, ToTensor, Resize, RandomHorizontalFlip, RandomRotation, ColorJitter
+from torchvision.transforms import (
+    Compose,
+    Normalize,
+    ToTensor,
+    Resize,
+    RandomHorizontalFlip,
+    RandomRotation,
+    ColorJitter,
+)
 from fl.config import load_run_config
 from fl.personalization import fedprox_loss
 from fl.dp import attach_dp_if_enabled
 from fl.partitioning import build_partitioner
-
-
-class Net(nn.Module):
-    """Model (simple CNN adapted from 'PyTorch: A 60 Minute Blitz')
-    
-    Note: This is the legacy model class. For new implementations, 
-    use fl.models.SimpleCNN instead for better modularity.
-    """
-
-    def __init__(self):
-        super(Net, self).__init__()
-        self.conv1 = nn.Conv2d(1, 6, 5)
-        self.pool = nn.MaxPool2d(2, 2)
-        self.conv2 = nn.Conv2d(6, 16, 5)
-        with torch.no_grad():
-            dummy = torch.zeros(1, 1, 28, 28)  # batch_size=1, 1 channel, 28x28 image
-            dummy = self.pool(F.relu(self.conv1(dummy)))
-            dummy = self.pool(F.relu(self.conv2(dummy)))
-            flattened_size = dummy.numel()
-
-        self.fc1 = nn.Linear(flattened_size, 120)
-        self.fc2 = nn.Linear(120, 84)
-        self.fc3 = nn.Linear(84, 10)
-
-    def forward(self, x):
-        x = self.pool(F.relu(self.conv1(x)))
-        x = self.pool(F.relu(self.conv2(x)))
-        x = x.view(x.size(0), -1)
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        return self.fc3(x)
 
 
 fds = None  # Cache FederatedDataset
@@ -73,14 +47,15 @@ if _aug_enabled:
     if rot_deg > 0:
         _aug_tfms.append(RandomRotation(degrees=rot_deg))
     if _aug_params.get("color_jitter", False):
-        _aug_tfms.append(ColorJitter(
-            brightness=_aug_params.get("brightness", 0.0),
-            contrast=_aug_params.get("contrast", 0.0),
-            saturation=_aug_params.get("saturation", 0.0),
-            hue=_aug_params.get("hue", 0.0),
-        ))
+        _aug_tfms.append(
+            ColorJitter(
+                brightness=_aug_params.get("brightness", 0.0),
+                contrast=_aug_params.get("contrast", 0.0),
+                saturation=_aug_params.get("saturation", 0.0),
+                hue=_aug_params.get("hue", 0.0),
+            )
+        )
 _augmentations = Compose(_aug_tfms) if _aug_tfms else None
-
 
 
 def apply_transforms(batch):
@@ -94,23 +69,21 @@ def apply_transforms(batch):
 
 def load_data(partition_id: int, num_partitions: int):
     """Load partition CIFAR10 data.
-    
+
     Args:
         partition_id: ID of the partition to load (must be in [0, num_partitions))
         num_partitions: Total number of partitions (must be > 0)
-        
+
     Returns:
         Tuple of (trainloader, testloader)
-        
+
     Raises:
         ValueError: If partition_id or num_partitions are invalid
     """
     # Input validation
     if num_partitions <= 0:
-        raise ValueError(
-            f"num_partitions must be positive, got {num_partitions}"
-        )
-    
+        raise ValueError(f"num_partitions must be positive, got {num_partitions}")
+
     if not (0 <= partition_id < num_partitions):
         raise ValueError(
             f"partition_id must be in [0, {num_partitions}), got {partition_id}"
@@ -135,14 +108,16 @@ def load_data(partition_id: int, num_partitions: int):
     # Construct dataloaders
     partition_train_test = partition_train_test.with_transform(apply_transforms)
     batch_size = int(_cfg.get("data", {}).get("batch_size", 32))
-    trainloader = DataLoader(partition_train_test["train"], batch_size=batch_size, shuffle=True)
+    trainloader = DataLoader(
+        partition_train_test["train"], batch_size=batch_size, shuffle=True
+    )
     testloader = DataLoader(partition_train_test["test"], batch_size=batch_size)
     return trainloader, testloader
 
 
 def train(net, trainloader, epochs, lr, device, global_state_dict=None):
     """Train the model on the training set.
-    
+
     Args:
         net: Neural network model
         trainloader: DataLoader for training data
@@ -150,20 +125,20 @@ def train(net, trainloader, epochs, lr, device, global_state_dict=None):
         lr: Learning rate (must be in (0, 1])
         device: Device to train on
         global_state_dict: Optional global model parameters for FedProx
-        
+
     Returns:
         Average training loss
-        
+
     Raises:
         ValueError: If epochs or lr are invalid
     """
     # Input validation
     if epochs < 1:
         raise ValueError(f"epochs must be >= 1, got {epochs}")
-    
+
     if not (0 < lr <= 1.0):
         raise ValueError(f"lr must be in (0, 1], got {lr}")
-    
+
     if len(trainloader.dataset) == 0:
         raise ValueError("trainloader dataset is empty")
     net.to(device)  # move model to GPU if available
@@ -178,7 +153,9 @@ def train(net, trainloader, epochs, lr, device, global_state_dict=None):
     net.train()
     running_loss = 0.0
     mu = float(_cfg.get("personalization", {}).get("fedprox_mu", 0.0))
-    use_fedprox = _cfg.get("personalization", {}).get("method", "none") == "fedprox" and mu > 0
+    use_fedprox = (
+        _cfg.get("personalization", {}).get("method", "none") == "fedprox" and mu > 0
+    )
     global_params = None
     if use_fedprox and global_state_dict is not None:
         global_params = [p.detach().clone() for p in global_state_dict.values()]
@@ -201,15 +178,15 @@ def train(net, trainloader, epochs, lr, device, global_state_dict=None):
 
 def test(net, testloader, device):
     """Validate the model on the test set.
-    
+
     Args:
         net: Neural network model
         testloader: DataLoader for test data
         device: Device to run evaluation on
-        
+
     Returns:
         Tuple of (loss, accuracy)
-        
+
     Raises:
         ValueError: If testloader is empty
     """
