@@ -1,0 +1,78 @@
+{
+    "dashboard": {
+        "title": "Communication Efficiency",
+        "panels": [
+            {
+                "id": 1,
+                "title": "Compression Ratio Over Time",
+                "type": "graph",
+                "targets": [
+                    {
+                        "expr": "avg(fl_compression_ratio) by (round)",
+                        "legendFormat": "Avg Compression Ratio"
+                    }
+                ],
+                "gridPos": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 12,
+                    "h": 8
+                }
+            },
+            {
+                "id": 2,
+                "title": "Bandwidth Saved (GB)",
+                "type": "stat",
+                "targets": [
+                    {
+                        "expr": "sum(fl_bandwidth_saved_bytes) / 1024 / 1024 / 1024"
+                    }
+                ],
+                "gridPos": {
+                    "x": 12,
+                    "y": 0,
+                    "w": 6,
+                    "h": 4
+                }
+            },
+            {
+                "id": 3,
+                "title": "Total Bytes Sent (MB)",
+                "type": "graph",
+                "targets": [
+                    {
+                        "expr": "sum(rate(fl_bytes_sent_total[5m])) by (client_id) / 1024 / 1024",
+                        "legendFormat": "{{client_id}}"
+                    }
+                ],
+                "gridPos": {
+                    "x": 0,
+                    "y": 8,
+                    "w": 12,
+                    "h": 8
+                }
+            },
+            {
+                "id": 4,
+                "title": "Compression Ratio by Client",
+                "type": "heatmap",
+                "targets": [
+                    {
+                        "expr": "fl_compression_ratio"
+                    }
+                ],
+                "gridPos": {
+                    "x": 12,
+                    "y": 8,
+                    "w": 12,
+                    "h": 8
+                }
+            }
+        ],
+        "refresh": "5s",
+        "time": {
+            "from": "now-1h",
+            "to": "now"
+        }
+    }
+}

@@ -1,0 +1,78 @@
+{
+    "dashboard": {
+        "title": "Byzantine Detection",
+        "panels": [
+            {
+                "id": 1,
+                "title": "Byzantine Clients Detected",
+                "type": "graph",
+                "targets": [
+                    {
+                        "expr": "sum(increase(fl_byzantine_detected[1m])) by (round)",
+                        "legendFormat": "Round {{round}}"
+                    }
+                ],
+                "gridPos": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 12,
+                    "h": 8
+                }
+            },
+            {
+                "id": 2,
+                "title": "Total Byzantine Detected",
+                "type": "stat",
+                "targets": [
+                    {
+                        "expr": "sum(fl_byzantine_detected)"
+                    }
+                ],
+                "gridPos": {
+                    "x": 12,
+                    "y": 0,
+                    "w": 6,
+                    "h": 4
+                }
+            },
+            {
+                "id": 3,
+                "title": "Anomaly Scores",
+                "type": "graph",
+                "targets": [
+                    {
+                        "expr": "fl_anomaly_score",
+                        "legendFormat": "{{client_id}}"
+                    }
+                ],
+                "gridPos": {
+                    "x": 0,
+                    "y": 8,
+                    "w": 12,
+                    "h": 8
+                }
+            },
+            {
+                "id": 4,
+                "title": "High Anomaly Clients",
+                "type": "table",
+                "targets": [
+                    {
+                        "expr": "topk(10, fl_anomaly_score > 3)"
+                    }
+                ],
+                "gridPos": {
+                    "x": 12,
+                    "y": 8,
+                    "w": 12,
+                    "h": 8
+                }
+            }
+        ],
+        "refresh": "5s",
+        "time": {
+            "from": "now-1h",
+            "to": "now"
+        }
+    }
+}
