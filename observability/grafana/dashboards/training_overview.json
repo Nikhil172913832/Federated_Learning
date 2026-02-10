@@ -1,0 +1,110 @@
+{
+    "dashboard": {
+        "title": "FL Training Overview",
+        "panels": [
+            {
+                "id": 1,
+                "title": "Training Loss",
+                "type": "graph",
+                "targets": [
+                    {
+                        "expr": "fl_training_loss",
+                        "legendFormat": "{{client_id}}"
+                    }
+                ],
+                "gridPos": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 12,
+                    "h": 8
+                }
+            },
+            {
+                "id": 2,
+                "title": "Model Accuracy",
+                "type": "graph",
+                "targets": [
+                    {
+                        "expr": "fl_model_accuracy",
+                        "legendFormat": "{{client_id}}"
+                    }
+                ],
+                "gridPos": {
+                    "x": 12,
+                    "y": 0,
+                    "w": 12,
+                    "h": 8
+                }
+            },
+            {
+                "id": 3,
+                "title": "Active Clients",
+                "type": "stat",
+                "targets": [
+                    {
+                        "expr": "count(fl_client_active == 1)"
+                    }
+                ],
+                "gridPos": {
+                    "x": 0,
+                    "y": 8,
+                    "w": 6,
+                    "h": 4
+                }
+            },
+            {
+                "id": 4,
+                "title": "Compression Ratio",
+                "type": "gauge",
+                "targets": [
+                    {
+                        "expr": "avg(fl_compression_ratio)"
+                    }
+                ],
+                "gridPos": {
+                    "x": 6,
+                    "y": 8,
+                    "w": 6,
+                    "h": 4
+                }
+            },
+            {
+                "id": 5,
+                "title": "Bandwidth Saved (MB)",
+                "type": "stat",
+                "targets": [
+                    {
+                        "expr": "sum(fl_bandwidth_saved_bytes) / 1024 / 1024"
+                    }
+                ],
+                "gridPos": {
+                    "x": 12,
+                    "y": 8,
+                    "w": 6,
+                    "h": 4
+                }
+            },
+            {
+                "id": 6,
+                "title": "Byzantine Clients Detected",
+                "type": "stat",
+                "targets": [
+                    {
+                        "expr": "sum(fl_byzantine_detected)"
+                    }
+                ],
+                "gridPos": {
+                    "x": 18,
+                    "y": 8,
+                    "w": 6,
+                    "h": 4
+                }
+            }
+        ],
+        "refresh": "5s",
+        "time": {
+            "from": "now-1h",
+            "to": "now"
+        }
+    }
+}
