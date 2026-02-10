@@ -1,0 +1,46 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fl-config
+  labels:
+    app: fl-platform
+data:
+  default.yaml: |
+    seed: 42
+    
+    topology:
+      num_clients: 10
+      fraction: 0.5
+    
+    train:
+      lr: 0.01
+      local-epochs: 1
+      num-server-rounds: 10
+      fraction-train: 1.0
+    
+    data:
+      dataset: "albertvillanova/medmnist-v2"
+      subset: "pneumoniamnist"
+      batch_size: 32
+    
+    privacy:
+      dp_sgd:
+        enabled: false
+        noise_multiplier: 0.8
+        max_grad_norm: 1.0
+        target_epsilon: 3.0
+    
+    security:
+      secure_agg: false
+      tls_enabled: false
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: fl-secrets
+  labels:
+    app: fl-platform
+type: Opaque
+stringData:
+  mlflow-tracking-uri: "http://mlflow:5000"
+  prometheus-url: "http://prometheus:9090"

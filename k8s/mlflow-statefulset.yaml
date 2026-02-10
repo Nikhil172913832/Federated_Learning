@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mlflow
+  labels:
+    app: mlflow
+spec:
+  serviceName: mlflow
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mlflow
+  template:
+    metadata:
+      labels:
+        app: mlflow
+    spec:
+      containers:
+      - name: mlflow
+        image: ghcr.io/mlflow/mlflow:latest
+        ports:
+        - containerPort: 5000
+          name: http
+        env:
+        - name: MLFLOW_BACKEND_STORE_URI
+          value: "sqlite:///mlflow/mlflow.db"
+        - name: MLFLOW_DEFAULT_ARTIFACT_ROOT
+          value: "/mlflow/artifacts"
+        volumeMounts:
+        - name: mlflow-data
+          mountPath: /mlflow
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+  volumeClaimTemplates:
+  - metadata:
+      name: mlflow-data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 10Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mlflow
+  labels:
+    app: mlflow
+spec:
+  type: ClusterIP
+  ports:
+  - port: 5000
+    targetPort: 5000
+    protocol: TCP
+    name: http
+  selector:
+    app: mlflow

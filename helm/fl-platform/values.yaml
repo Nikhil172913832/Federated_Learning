@@ -1,0 +1,84 @@
+replicaCount:
+  server: 1
+  client: 5
+
+image:
+  repository: fl-platform
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+server:
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "500m"
+    limits:
+      memory: "1Gi"
+      cpu: "1000m"
+
+client:
+  resources:
+    requests:
+      memory: "1Gi"
+      cpu: "1000m"
+    limits:
+      memory: "2Gi"
+      cpu: "2000m"
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 20
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+mlflow:
+  enabled: true
+  persistence:
+    enabled: true
+    size: 10Gi
+
+prometheus:
+  enabled: true
+  server:
+    persistentVolume:
+      enabled: true
+      size: 10Gi
+
+grafana:
+  enabled: true
+  persistence:
+    enabled: true
+    size: 5Gi
+  adminPassword: "admin"
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  hosts:
+    - host: fl.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: fl-tls
+      hosts:
+        - fl.example.com
+
+config:
+  seed: 42
+  numClients: 10
+  numRounds: 10
+  learningRate: 0.01
+  localEpochs: 1
+  batchSize: 32
+  
+  privacy:
+    enabled: false
+    epsilon: 3.0
+    delta: 1e-5
+  
+  security:
+    secureAgg: false
+    tlsEnabled: false
