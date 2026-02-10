@@ -1,304 +1,141 @@
-# Federated Learning Platform - Architecture Deep Dive
+# Architecture
 
 ## System Overview
 
-The FL platform implements a production-ready federated learning system with advanced privacy, security, and communication efficiency features.
+Production federated learning system with privacy, security, and communication efficiency.
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                     Kubernetes Cluster                       │
-│                                                              │
-│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐  │
-│  │  FL Server   │    │  FL Clients  │    │   MLflow     │  │
-│  │  (SuperLink) │◄───┤  (Workers)   │───►│  (Tracking)  │  │
-│  └──────────────┘    └──────────────┘    └──────────────┘  │
-│         │                    │                    │         │
-│         └────────────────────┴────────────────────┘         │
-│                              │                               │
-│                    ┌─────────▼─────────┐                    │
-│                    │   Observability   │                    │
-│                    │ Prometheus+Grafana│                    │
-│                    └───────────────────┘                    │
-└─────────────────────────────────────────────────────────────┘
+Kubernetes Cluster
+├── FL Server (SuperLink)
+├── FL Clients (Workers)  
+├── MLflow (Tracking)
+└── Prometheus + Grafana (Monitoring)
 ```
 
 ## Core Components
 
-### 1. Data Loading (`fl/data_loader.py`)
+### Data Loading
 
-**Thread-safe singleton pattern** for federated dataset management:
+Thread-safe singleton pattern for dataset management.
 
 ```python
 class FederatedDataLoader:
     _lock = threading.Lock()
     _instances: Dict[str, 'FederatedDataLoader'] = {}
-    
-    @classmethod
-    def get_instance(cls, config):
-        # Thread-safe singleton per config
 ```
 
-**Features:**
-- Lazy initialization of datasets
-- Configurable transforms and augmentation
-- Patient-based partitioning for hospital simulation
-- 80/20 train/test split per client
+Features:
+- Lazy initialization
+- Patient-based partitioning
+- Configurable transforms
+- 80/20 train/test split
 
-### 2. Gradient Compression (`fl/compression.py`)
+### Gradient Compression
 
-**Hybrid compression** combining multiple techniques:
+Hybrid compression combining quantization and sparsification.
 
-```python
-HybridCompressor:
-  ├── QuantizationCompressor (1-32 bits)
-  ├── TopKSparsifier (configurable sparsity)
-  └── Error Feedback (accumulates residuals)
-```
-
-**Compression Pipeline:**
+Pipeline:
 1. Add error feedback from previous round
-2. Apply top-k sparsification (keep 10% of values)
-3. Quantize sparse values to 8 bits
+2. Apply top-k sparsification (keep 10%)
+3. Quantize to 8 bits
 4. Store error for next round
 
-**Expected Performance:**
-- Compression ratio: 20-50x
-- Accuracy loss: <2%
-- Bandwidth savings: 95%+
+Expected: 20-50x compression, <2% accuracy loss
 
-### 3. Byzantine-Robust Aggregation (`fl/robust_aggregation.py`)
+### Byzantine-Robust Aggregation
 
-**Multiple defense mechanisms:**
+Defense mechanisms:
 
-**Multi-Krum:**
-- Computes pairwise distances between all client updates
-- Selects k clients with smallest aggregate distance
-- Averages selected updates
+**Multi-Krum**: Select k clients with smallest pairwise distances
 
-**Trimmed Mean:**
-- Sorts values element-wise across clients
-- Trims α% from each end
-- Averages remaining values
+**Trimmed Mean**: Sort element-wise, trim extremes, average
 
-**Anomaly Detection:**
-- Z-score based outlier detection
-- Gradient norm analysis
-- Configurable threshold
+**Anomaly Detection**: Z-score based outlier detection
 
-**Robustness:**
-- Handles up to 30% malicious clients
-- Maintains >90% accuracy with 20% malicious
-- Automatic Byzantine detection
+Handles up to 30% malicious clients
 
-### 4. Privacy Validation (`fl/privacy/membership_inference.py`)
+### Privacy Validation
 
-**Empirical privacy auditing:**
+Membership inference attacks for empirical privacy auditing.
 
-```python
-MembershipInferenceAttack:
-  ├── Train shadow models
-  ├── Extract prediction confidence features
-  ├── Train attack model (Logistic Regression)
-  └── Evaluate on target model
-```
+Process:
+1. Train shadow models
+2. Extract prediction confidence
+3. Train attack model
+4. Evaluate on target
 
-**Metrics:**
-- Attack accuracy
-- True/False positive rates
-- AUC-ROC
-- Privacy budget (ε) correlation
+Metrics: Attack accuracy, AUC-ROC, privacy budget correlation
 
-**Validation:**
-- Test with ε = 1, 3, 5, 10, ∞
-- Measure attack success rate
-- Verify ε-δ guarantees empirically
-
-## Data Flow
-
-### Training Round
+## Training Round Flow
 
 ```
-1. Server broadcasts global model
-   ↓
-2. Clients receive model
-   ↓
-3. Clients train locally
-   ├── Load partition data
-   ├── Apply transforms
-   ├── Train for k epochs
-   └── Compute gradients
-   ↓
-4. Clients compress gradients
-   ├── Quantization (8-bit)
-   ├── Sparsification (90%)
-   └── Error feedback
-   ↓
-5. Clients send compressed updates
-   ↓
-6. Server detects Byzantine clients
-   ├── Compute gradient norms
-   ├── Z-score analysis
-   └── Flag outliers
-   ↓
-7. Server aggregates (robust)
-   ├── Multi-Krum or Trimmed Mean
-   ├── Filter Byzantine updates
-   └── Compute weighted average
-   ↓
-8. Server decompresses gradients
-   ↓
-9. Server updates global model
-   ↓
-10. Repeat for R rounds
+1. Server broadcasts model
+2. Clients train locally
+3. Clients compress gradients
+4. Clients send updates
+5. Server detects Byzantine clients
+6. Server aggregates (robust)
+7. Server updates model
+8. Repeat
 ```
 
-## Deployment Architecture
+## Deployment
 
 ### Kubernetes Resources
 
-**Server:**
-- Deployment (1 replica)
-- Service (ClusterIP)
-- Resources: 512Mi-1Gi RAM, 0.5-1 CPU
+**Server**: 1 replica, 512Mi-1Gi RAM, 0.5-1 CPU
 
-**Clients:**
-- Deployment (5 replicas)
-- HorizontalPodAutoscaler (2-20 replicas)
-- Resources: 1-2Gi RAM, 1-2 CPU
+**Clients**: 5-20 replicas (HPA), 1-2Gi RAM, 1-2 CPU
 
-**MLflow:**
-- StatefulSet (1 replica)
-- PersistentVolumeClaim (10Gi)
-- Service (ClusterIP)
+**MLflow**: StatefulSet, 10Gi storage
 
-**Observability:**
-- Prometheus (metrics)
-- Grafana (dashboards)
-- Loki (logs)
+**Monitoring**: Prometheus + Grafana
 
-### Helm Chart
+### Configuration
 
-**Configurable parameters:**
+Helm chart with configurable:
 - Number of clients
 - Training rounds
 - Learning rate
-- Privacy budget (ε)
+- Privacy budget
 - Compression settings
-- Resource limits
 
-## Security Features
+## Security
 
-### 1. Differential Privacy
-- DP-SGD with Opacus
-- Configurable ε and δ
-- Per-client privacy accounting
-- Empirical validation via MIA
+1. Differential Privacy (DP-SGD)
+2. Secure Aggregation (encrypted updates)
+3. Byzantine Robustness (Multi-Krum, Trimmed Mean)
+4. TLS/mTLS (encrypted communication)
 
-### 2. Secure Aggregation
-- Encrypted gradient updates
-- Homomorphic encryption
-- No server access to raw gradients
+## Monitoring
 
-### 3. Byzantine Robustness
-- Multi-Krum aggregation
-- Trimmed Mean aggregation
-- Anomaly detection
-- Malicious client simulation
+Metrics:
+- Training: loss, accuracy, convergence
+- Communication: bytes, compression ratio, bandwidth
+- Security: Byzantine detection, privacy budget
+- System: CPU, memory, latency
 
-### 4. TLS/mTLS
-- Encrypted communication
-- Client authentication
-- Certificate management
-
-## Performance Optimizations
-
-### 1. Communication Efficiency
-- Hybrid compression (20-50x)
-- Gradient sparsification
-- Quantization
-- Error feedback
-
-### 2. Computation Efficiency
-- GPU acceleration
-- Batch processing
-- Efficient data loading
-- Model parallelism
-
-### 3. Scalability
-- Horizontal pod autoscaling
-- Asynchronous aggregation
-- Load balancing
-- Resource quotas
-
-## Monitoring & Observability
-
-### Metrics Tracked
-
-**Training:**
-- Loss per client
-- Accuracy per client
-- Convergence rate
-- Training time
-
-**Communication:**
-- Bytes sent/received
-- Compression ratio
-- Bandwidth saved
-- Round trip time
-
-**Security:**
-- Byzantine clients detected
-- Privacy budget consumed
-- Attack success rate
-- Anomaly scores
-
-**System:**
-- CPU/Memory usage
-- Pod count
-- Request latency
-- Error rates
-
-### Dashboards
-
-1. **Training Overview**: Loss, accuracy, active clients
-2. **Communication Efficiency**: Compression, bandwidth
-3. **Security Monitoring**: Byzantine detection, privacy
-4. **System Health**: Resources, latency, errors
+Dashboards:
+1. Training Overview
+2. Communication Efficiency
+3. Byzantine Detection
 
 ## Best Practices
 
-### Development
+Development:
 - Use virtual environments
 - Run tests before committing
-- Follow PEP 8 style guide
+- Follow PEP 8
 - Add type hints
-- Write docstrings
 
-### Deployment
-- Use Helm for configuration
+Deployment:
+- Use Helm
 - Set resource limits
 - Enable autoscaling
 - Configure health checks
-- Use persistent volumes
 
-### Security
+Security:
 - Enable DP for sensitive data
-- Use secure aggregation
-- Monitor for Byzantine behavior
+- Monitor Byzantine behavior
 - Rotate certificates
 - Audit privacy regularly
-
-### Monitoring
-- Set up alerts
-- Monitor resource usage
-- Track training metrics
-- Log all errors
-- Create runbooks
-
-## Future Enhancements
-
-1. **Personalization**: Meta-learning, FedPer
-2. **Async Aggregation**: Staleness weighting
-3. **Entropy Encoding**: Huffman coding
-4. **Advanced Privacy**: Secure multi-party computation
-5. **Model Compression**: Pruning, distillation

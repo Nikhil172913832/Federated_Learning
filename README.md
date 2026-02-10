@@ -1,27 +1,20 @@
 # Federated Learning Platform
 
-**Production-ready federated learning platform** demonstrating privacy-preserving distributed training with novel communication efficiency and Byzantine robustness.
+Production-ready federated learning platform with privacy-preserving distributed training, communication efficiency, and Byzantine robustness.
 
-## Key Features
+## Features
 
-✅ **Novel Algorithms**
+**Algorithms**
 - Hybrid gradient compression (20-50x ratio)
 - Byzantine-robust aggregation (Multi-Krum, Trimmed Mean)
-- Empirical privacy validation (membership inference attacks)
+- Differential privacy (DP-SGD)
+- Membership inference attack validation
 
-✅ **Production Infrastructure**
+**Infrastructure**
 - Kubernetes deployment with Helm
 - CI/CD pipeline with GitHub Actions
-- Observability stack (Prometheus + Grafana)
+- Prometheus + Grafana monitoring
 - MLflow experiment tracking
-
-✅ **Security & Privacy**
-- Differential privacy (DP-SGD)
-- Secure aggregation
-- Malicious client detection
-- Privacy auditing framework
-
----
 
 ## Quick Start
 
@@ -29,65 +22,26 @@
 ./launch-platform.sh
 ```
 
-Then visit:
-- **Dashboard**: http://localhost:8050
-- **MLflow**: http://localhost:5000
+Access:
+- Dashboard: http://localhost:8050
+- MLflow: http://localhost:5000
 
-The platform will:
-1. Start FL server and clients
-2. Train across multiple clients
-3. Show real-time progress
-4. Track experiments in MLflow
-
----
-
-## What You're Looking At
-
-### The Core (Start Here)
+## Core Structure
 
 ```
 complete/fl/
 ├── fl/
-│   ├── task.py          # ⭐ Core: train(), test(), load_data()
-│   ├── server_app.py    # ⭐ Server: aggregation logic
-│   ├── client_app.py    # ⭐ Client: local training
-│   ├── aggregation.py   # FedAvg, FedProx, FedNova
-│   ├── dp.py            # Differential privacy
-│   └── secure_agg.py    # Secure aggregation
+│   ├── task.py          # Training loop
+│   ├── server_app.py    # Server aggregation
+│   ├── client_app.py    # Client training
+│   ├── compression.py   # Gradient compression
+│   ├── robust_aggregation.py  # Byzantine robustness
+│   └── privacy/         # Privacy validation
 ├── config/
 │   └── default.yaml     # Configuration
 └── tests/
-    └── test_*.py        # Test suite (80%+ coverage)
+    └── test_*.py        # Test suite
 ```
-
-**Three files to understand the entire system**:
-1. [`task.py`](complete/fl/fl/task.py) - Training loop
-2. [`server_app.py`](complete/fl/fl/server_app.py) - Server logic
-3. [`client_app.py`](complete/fl/fl/client_app.py) - Client logic
-
----
-
-## What's Implemented
-
-### Algorithms
-- ✅ FedAvg (Federated Averaging)
-- ✅ FedProx (Proximal term for non-IID)
-- ✅ FedNova (Normalized averaging)
-- ✅ Scaffold (Variance reduction)
-
-### Privacy & Security
-- ✅ Differential Privacy (DP-SGD, ε-δ guarantees)
-- ✅ Secure Aggregation (encrypted updates)
-- ✅ Non-IID data (Dirichlet, label skew)
-
-### Production
-- ✅ Docker deployment
-- ✅ MLflow tracking
-- ✅ Real-time dashboard
-- ✅ 80%+ test coverage
-- ✅ CI/CD pipeline
-
----
 
 ## Configuration
 
@@ -108,13 +62,6 @@ data:
   subset: "pneumoniamnist"
   batch_size: 32
 
-# Optional: Non-IID data
-  non_iid:
-    type: "label_skew"
-    params:
-      alpha: 0.5
-
-# Optional: Differential Privacy
 privacy:
   dp_sgd:
     enabled: true
@@ -122,12 +69,9 @@ privacy:
     target_epsilon: 3.0
 ```
 
----
-
 ## Development
 
-### Local (without Docker)
-
+Local setup:
 ```bash
 cd complete/fl
 pip install -e ".[dev]"
@@ -135,84 +79,26 @@ pytest tests/ -v --cov=fl
 flwr run . local-simulation --stream
 ```
 
-### Docker
-
+Docker:
 ```bash
-./launch-platform.sh  # Start
-docker compose -f complete/compose-with-ui.yml down  # Stop
+./launch-platform.sh
+docker compose -f complete/compose-with-ui.yml down
 ```
-
----
-
-## Architecture
-
-```
-SuperLink (Server)
-    ├── Aggregates updates (FedAvg/FedProx)
-    ├── Manages rounds
-    └── Logs to MLflow
-         │
-    ┌────┴────┬────────┬────────┐
-    │         │        │        │
-SuperNode  SuperNode  ...  SuperNode
-(Client 1) (Client 2)     (Client N)
-    │         │              │
-Private    Private       Private
-Data       Data          Data
-```
-
----
 
 ## Documentation
 
-- [ARCHITECTURE.md](docs/ARCHITECTURE.md) - System design
-- [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) - Common issues
-- [DEPLOYMENT.md](docs/DEPLOYMENT.md) - Production deployment
-- [CONTRIBUTING.md](CONTRIBUTING.md) - Development guide
-
----
+- [Architecture](docs/architecture.md) - System design
+- [API Reference](docs/api.md) - Module documentation
+- [Kubernetes Deployment](docs/kubernetes_deployment.md) - Production deployment
+- [Troubleshooting](docs/troubleshooting.md) - Common issues
 
 ## Testing
 
 ```bash
 cd complete/fl
-
-# All tests
-pytest tests/ -v
-
-# With coverage
 pytest tests/ -v --cov=fl --cov-report=html
-
-# Specific test
-pytest tests/test_integration.py -v
 ```
-
-**Coverage**: 80%+
-
----
-
-## What Makes This Production-Ready
-
-1. **Battle-tested algorithms**: FedAvg, FedProx, DP-SGD
-2. **Comprehensive testing**: 80%+ coverage
-3. **Production deployment**: Docker, Kubernetes
-4. **Privacy guarantees**: Differential privacy (ε-δ)
-5. **Real-world datasets**: Medical imaging
-6. **Experiment tracking**: MLflow integration
-7. **Professional docs**: Complete guides
-
----
 
 ## License
 
-Apache 2.0
-
----
-
-## One Command to Rule Them All
-
-```bash
-./launch-platform.sh
-```
-
-Everything else is in the docs.
+MIT
